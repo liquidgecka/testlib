@@ -44,12 +44,12 @@ type testingTB interface {
 // This is the tracking object used to store various variables and bits needed
 // for tracking the test. Each test should create this object and then destroy
 // it when the test finishes by using a defer() call.
-type TestLib struct {
+type T struct {
 	// This stores a reference to the testing.T or testing.B object used to
 	// create the initial test.
 	t testingTB
 
-	// This is the name of the test (function name) that created this TestLib
+	// This is the name of the test (function name) that created this T
 	// instance.
 	name string
 
@@ -61,14 +61,14 @@ type TestLib struct {
 }
 
 // This should be called when the test is started. It will initialize a
-// TestLib instance for the specific test.
-func NewTestLib(t testingTB) *TestLib {
-	return &TestLib{t: t}
+// T instance for the specific test.
+func NewT(t testingTB) *T {
+	return &T{t: t}
 }
 
 // This function should be immediately added as a defer after initializing
-// the TestLib structure. This will clean up after the test.
-func (t *TestLib) Finish() {
+// the T structure. This will clean up after the test.
+func (t *T) Finish() {
 	for i := len(t.finalizers) - 1; i >= 0; i-- {
 		t.finalizers[i]()
 	}
@@ -79,14 +79,14 @@ func (t *TestLib) Finish() {
 // This adds a function that will be called once the test completes. The
 // functions are called when the test finishes in reverse order from how
 // they were added.
-func (t *TestLib) AddFinalizer(f func()) {
+func (t *T) AddFinalizer(f func()) {
 	t.finalizers = append(t.finalizers, f)
 }
 
 // This call will make a stack trace message for the Fatal/Fatalf and
 // Error/Errorf function calls. This will insert "msg" at the top of the
 // stack and return a string.
-func (t *TestLib) makeStack(msg string) string {
+func (t *T) makeStack(msg string) string {
 	lines := make([]string, 0, 100)
 	lines = append(lines, msg)
 
@@ -114,12 +114,12 @@ func (t *TestLib) makeStack(msg string) string {
 
 // Wraps the testing.T.Error function call in order to provide full stack
 // traces around the error being reported rather than just the calling line.
-func (t *TestLib) Error(args ...interface{}) {
+func (t *T) Error(args ...interface{}) {
 	t.t.Error(t.makeStack(fmt.Sprint(args...)))
 }
 
 // Like Error() but for formatted strings.
-func (t *TestLib) Errorf(format string, args ...interface{}) {
+func (t *T) Errorf(format string, args ...interface{}) {
 	t.t.Error(t.makeStack(fmt.Sprintf(format, args...)))
 }
 
@@ -127,20 +127,20 @@ func (t *TestLib) Errorf(format string, args ...interface{}) {
 // Specifically this will output a full stack trace rather than just the
 // failing line. This is optimal because it makes debugging when loops
 // or helper functions are used far easier.
-func (t *TestLib) Fatal(args ...interface{}) {
+func (t *T) Fatal(args ...interface{}) {
 	// TODO: Add pre-failure helper functions.
 	t.t.Fatal(t.makeStack(fmt.Sprint(args...)))
 }
 
 // Like Fatal() except for formatted strings.
-func (t *TestLib) Fatalf(format string, args ...interface{}) {
+func (t *T) Fatalf(format string, args ...interface{}) {
 	// TODO: Add pre-failure helper functions.
 	t.t.Fatal(t.makeStack(fmt.Sprintf(format, args...)))
 }
 
 // Gets the function name of the running test. This is useful since there is
 // no other programatic way of finding out which test is running.
-func (t *TestLib) Name() string {
+func (t *T) Name() string {
 	// If we already calculated this then just return the cached value.
 	if t.name != "" {
 		return t.name

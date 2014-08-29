@@ -26,7 +26,7 @@ import (
 // Compares two values to ensure that they are equal to each other. This will
 // deep inspect both values to ensure that the full structure tree is equal.
 // It also walks through pointers ensuring that everything is equal.
-func (t *TestLib) Equal(have, want interface{}, desc ...string) {
+func (t *T) Equal(have, want interface{}, desc ...string) {
 	prefix := ""
 	if len(desc) > 0 {
 		prefix = strings.Join(desc, " ") + ": "
@@ -56,7 +56,7 @@ func (t *TestLib) Equal(have, want interface{}, desc ...string) {
 
 // Like Equal() except that it asserts that the two values are not equal
 // to each other.
-func (t *TestLib) NotEqual(have, want interface{}, desc ...string) {
+func (t *T) NotEqual(have, want interface{}, desc ...string) {
 	prefix := ""
 	if len(desc) > 0 {
 		prefix = strings.Join(desc, " ") + ": "
@@ -91,7 +91,7 @@ type visitedNode struct {
 }
 
 // Returns true if the underlying object is nil.
-func (t *TestLib) isNil(obj interface{}) bool {
+func (t *T) isNil(obj interface{}) bool {
 	if obj == nil {
 		return true
 	}
@@ -109,7 +109,7 @@ func (t *TestLib) isNil(obj interface{}) bool {
 }
 
 // Deep comparison. This is based on golang 1.2's reflect.Equal functionality.
-func (t *TestLib) deepEqual(
+func (t *T) deepEqual(
 	desc string, have, want reflect.Value, visited map[uintptr]*visitedNode,
 ) (diffs []string) {
 	if !want.IsValid() && !have.IsValid() {

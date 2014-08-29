@@ -32,7 +32,7 @@ import (
 //
 // Files in this directory are cleaned up by a child process that is forked
 // from the running process so that nothing can stop them from being cleaned.
-func (t *TestLib) RootTempDir() string {
+func (t *T) RootTempDir() string {
 	testLibRootDirOnce.Do(func() {
 		var err error
 		var reader *os.File
@@ -58,7 +58,7 @@ func (t *TestLib) RootTempDir() string {
 // Creates a temporary directory for this specific test which will be cleaned
 // once the test has finished executing. This calls RootTempDir() to create the
 // base directory.
-func (t *TestLib) TempDirMode(mode os.FileMode) string {
+func (t *T) TempDirMode(mode os.FileMode) string {
 	f, err := ioutil.TempDir(t.RootTempDir(), t.Name())
 	t.ExpectSuccess(err)
 	t.NotEqual(f, "")
@@ -70,13 +70,13 @@ func (t *TestLib) TempDirMode(mode os.FileMode) string {
 }
 
 // Like TempDirMode except this sets the default mode to 0755.
-func (t *TestLib) TempDir() string {
+func (t *T) TempDir() string {
 	return t.TempDirMode(os.FileMode(0755))
 }
 
 // Creates a temporary file in a temporary directory with a specific mode
 // set on it. This will return the file descriptor of the open file.
-func (t *TestLib) TempFileMode(mode os.FileMode) *os.File {
+func (t *T) TempFileMode(mode os.FileMode) *os.File {
 	f, err := ioutil.TempFile(t.RootTempDir(), t.Name())
 	t.ExpectSuccess(err)
 	t.ExpectSuccess(os.Chmod(f.Name(), mode))
@@ -88,13 +88,13 @@ func (t *TestLib) TempFileMode(mode os.FileMode) *os.File {
 }
 
 // Like TempFileMode except that it uses a default mode of 0644.
-func (t *TestLib) TempFile() *os.File {
+func (t *T) TempFile() *os.File {
 	return t.TempFileMode(os.FileMode(0644))
 }
 
 // Makes a temporary file with the given string as contents. This returns
 // the name of the created file.
-func (t *TestLib) WriteTempFileMode(contents string, mode os.FileMode) string {
+func (t *T) WriteTempFileMode(contents string, mode os.FileMode) string {
 	f := t.TempFileMode(mode)
 	name := f.Name()
 	_, err := io.WriteString(f, contents)
@@ -104,7 +104,7 @@ func (t *TestLib) WriteTempFileMode(contents string, mode os.FileMode) string {
 }
 
 // Like WriteTempFileMode except this uses the default temp file mode.
-func (t *TestLib) WriteTempFile(contents string) string {
+func (t *T) WriteTempFile(contents string) string {
 	return t.WriteTempFileMode(contents, 0644)
 }
 

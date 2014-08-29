@@ -20,9 +20,9 @@ import (
 
 type testEqualCutomType string
 
-func TestTestLibEqual(t *testing.T) {
+func TestTEqual(t *testing.T) {
 	m := &mockT{}
-	T := NewTestLib(m)
+	T := NewT(m)
 
 	var nilPtr *mockT
 	strSlice1 := []string{"A", "B", "C"}
@@ -101,9 +101,9 @@ func TestTestLibEqual(t *testing.T) {
 	m.CheckFail(t, func() { T.Equal(strMap1, strMap3) })
 }
 
-func TestTestLibNotEqual(t *testing.T) {
+func TestTNotEqual(t *testing.T) {
 	m := &mockT{}
-	T := NewTestLib(m)
+	T := NewT(m)
 
 	var nilPtr *mockT
 	strSlice1 := []string{"A", "B", "C"}

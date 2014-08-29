@@ -26,7 +26,7 @@ import (
 // has elapsed. If 'f' returns true this will return, otherwise if 'f' returns
 // false for the whole period then this will automatically call Fatal to
 // terminate the test.
-func (t *TestLib) TryUntil(
+func (t *T) TryUntil(
 	f func() bool, timeout time.Duration, desc ...string,
 ) {
 	prefix := ""

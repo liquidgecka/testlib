@@ -61,7 +61,7 @@
 // Examples
 //
 // Note that the traditional Go Examples functionality is hindered since
-// calls to TestLib assume that you are starting in a unit test (and therefor
+// calls to T assume that you are starting in a unit test (and therefor
 // have access to a *testing.T object). What follows are some simple pasted
 // examples showing how the code can look.
 //
@@ -71,7 +71,7 @@
 // returned an error, and Equal() will Fatalf if the read value does not match
 // what we write.
 //  func TestIoReadAll(t *testing.T) {
-//      T := testlib.NewTestLib(t)
+//      T := testlib.NewT(t)
 //      defer T.Finish()
 //      tempFile := T.WriteTempFile("contents")
 //      contents, err := ioutil.ReadFile(tempFile)

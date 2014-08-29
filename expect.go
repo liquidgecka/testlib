@@ -22,7 +22,7 @@ import (
 
 // This call will check that the given error object is non nil and if it is
 // not it will automatically Fatalf the test with a message.
-func (t *TestLib) ExpectError(err error, desc ...string) {
+func (t *T) ExpectError(err error, desc ...string) {
 	if err != nil {
 		return
 	}
@@ -35,7 +35,7 @@ func (t *TestLib) ExpectError(err error, desc ...string) {
 
 // Checks to see that the given error object is nil. This is handy for
 // performing quick checks on calls that are expected to work.
-func (t *TestLib) ExpectSuccess(err error, desc ...string) {
+func (t *T) ExpectSuccess(err error, desc ...string) {
 	if err == nil {
 		return
 	}
