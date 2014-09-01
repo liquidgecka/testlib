@@ -123,6 +123,16 @@ func (t *T) Errorf(format string, args ...interface{}) {
 	t.t.Error(t.makeStack(fmt.Sprintf(format, args...)))
 }
 
+// A wrapper around testing.T.FailNow()
+func (t *T) FailNow() {
+	t.t.FailNow()
+}
+
+// A wrapper around testing.T.Failed()
+func (t *T) Failed() bool {
+	return t.t.Failed()
+}
+
 // This is a wrapper around Fatal in order to provide much nicer output.
 // Specifically this will output a full stack trace rather than just the
 // failing line. This is optimal because it makes debugging when loops
@@ -136,6 +146,16 @@ func (t *T) Fatal(args ...interface{}) {
 func (t *T) Fatalf(format string, args ...interface{}) {
 	// TODO: Add pre-failure helper functions.
 	t.t.Fatal(t.makeStack(fmt.Sprintf(format, args...)))
+}
+
+// A wrapper for testing.T.Log to make object passing easier.
+func (t *T) Log(args ...interface{}) {
+	t.t.Log(args...)
+}
+
+// A wrapper for testing.T.Logf to make object passing easier.
+func (t *T) Logf(format string, args ...interface{}) {
+	t.t.Logf(format, args...)
 }
 
 // Gets the function name of the running test. This is useful since there is
@@ -172,4 +192,19 @@ func (t *T) Name() string {
 	}
 
 	return t.name
+}
+
+// A wrapper around testing.T.SkipNow()
+func (t *T) SkipNow() {
+	t.t.SkipNow()
+}
+
+// Wraps around testing.T.Skipf except this provides a full stack trace.
+func (t *T) Skipf(format string, args ...interface{}) {
+	t.t.Skip(t.makeStack(fmt.Sprintf(format, args...)))
+}
+
+// A wrapper around testing.T.Skipped()
+func (t *T) Skipped() bool {
+	return t.t.Skipped()
 }
