@@ -17,6 +17,7 @@ package testlib
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -47,12 +48,20 @@ func TestT_TryUntilFails(t *testing.T) {
 func TestT_TryUntilYield(t *testing.T) {
 	t.Parallel()
 	m, T := testSetup()
+	l := sync.Mutex{}
 	unlocked := false
 	go func() {
 		time.Sleep(time.Second / 200)
+		l.Lock()
 		unlocked = true
+		l.Unlock()
 	}()
+	getUnlocked := func() bool {
+		l.Lock()
+		defer l.Unlock()
+		return unlocked
+	}
 	m.CheckPass(t, func() {
-		T.TryUntil(func() bool { return unlocked }, time.Second/50)
+		T.TryUntil(getUnlocked, time.Second/50)
 	})
 }
