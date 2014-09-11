@@ -72,8 +72,6 @@ func (t *T) Finish() {
 	for i := len(t.finalizers) - 1; i >= 0; i-- {
 		t.finalizers[i]()
 	}
-
-	// FIXME: Logging?
 }
 
 // This adds a function that will be called once the test completes. The
@@ -174,15 +172,11 @@ func (t *T) Name() string {
 	for i := 0; true; i++ {
 		if pc, _, _, ok := runtime.Caller(i); !ok {
 			break
-		} else if f := runtime.FuncForPC(pc); f == nil {
-			continue
 		} else {
+			f := runtime.FuncForPC(pc)
 			name := f.Name()
 			index := strings.LastIndex(name, ".")
-			if index < 1 {
-				continue
-			}
-			name = name[index:]
+			name = name[index+1:]
 			if strings.HasPrefix(name, "Test") {
 				t.name = name
 			} else if strings.HasPrefix(name, "Benchmark") {
@@ -192,6 +186,11 @@ func (t *T) Name() string {
 	}
 
 	return t.name
+}
+
+// Marks the test as having skipped and reports a full stack trace.
+func (t *T) Skip(args ...interface{}) {
+	t.t.Skip(t.makeStack(fmt.Sprint(args...)))
 }
 
 // A wrapper around testing.T.SkipNow()

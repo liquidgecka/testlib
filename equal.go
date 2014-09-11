@@ -197,43 +197,27 @@ func (t *T) deepEqual(
 			}
 		}
 
-	case reflect.Slice:
-		if !checkNil() && !checkLen() {
-			for i := 0; i < want.Len(); i++ {
-				newdiffs := t.deepEqual(
-					fmt.Sprintf("%s[%d]", desc, i),
-					want.Index(i), have.Index(i), visited)
-				diffs = append(diffs, newdiffs...)
-			}
+	case reflect.Chan:
+		// Channels are complex to compare so we rely on the existing type
+		// checks to assert correctness, and then we add an additional
+		// capacity check to assert buffer size.
+		hcap := have.Cap()
+		wcap := want.Cap()
+		if hcap != wcap {
+			diffs = append(diffs, fmt.Sprintf(
+				"%sCapacities differ:\n, have: %d\nwant: %d", desc, hcap, wcap))
+			return diffs
 		}
+
+	case reflect.Func:
+		// Can't do better than this:
+		checkNil()
 
 	case reflect.Interface:
 		if !checkNil() {
 			newdiffs := t.deepEqual(
 				desc, want.Elem(), have.Elem(), visited)
 			diffs = append(diffs, newdiffs...)
-		}
-
-	case reflect.Ptr:
-		newdiffs := t.deepEqual(
-			desc, want.Elem(), have.Elem(), visited)
-		diffs = append(diffs, newdiffs...)
-
-	case reflect.Struct:
-		for i, n := 0, want.NumField(); i < n; i++ {
-			name := want.Type().Field(i).Name
-			// Make sure that we don't print a strange error if the
-			// first object given to us is a struct.
-			if desc == "" {
-				newdiffs := t.deepEqual(
-					name, want.Field(i), have.Field(i), visited)
-				diffs = append(diffs, newdiffs...)
-			} else {
-				newdiffs := t.deepEqual(
-					fmt.Sprintf("%s.%s", desc, name),
-					want.Field(i), have.Field(i), visited)
-				diffs = append(diffs, newdiffs...)
-			}
 		}
 
 	case reflect.Map:
@@ -266,9 +250,20 @@ func (t *T) deepEqual(
 			}
 		}
 
-	case reflect.Func:
-		// Can't do better than this:
-		checkNil()
+	case reflect.Ptr:
+		newdiffs := t.deepEqual(
+			desc, want.Elem(), have.Elem(), visited)
+		diffs = append(diffs, newdiffs...)
+
+	case reflect.Slice:
+		if !checkNil() && !checkLen() {
+			for i := 0; i < want.Len(); i++ {
+				newdiffs := t.deepEqual(
+					fmt.Sprintf("%s[%d]", desc, i),
+					want.Index(i), have.Index(i), visited)
+				diffs = append(diffs, newdiffs...)
+			}
+		}
 
 	case reflect.String:
 		// We know the underlying type is a string so calling String()
@@ -294,115 +289,59 @@ func (t *T) deepEqual(
 			}
 		}
 
+	case reflect.Struct:
+		for i, n := 0, want.NumField(); i < n; i++ {
+			name := want.Type().Field(i).Name
+			// Make sure that we don't print a strange error if the
+			// first object given to us is a struct.
+			if desc == "" {
+				newdiffs := t.deepEqual(
+					name, want.Field(i), have.Field(i), visited)
+				diffs = append(diffs, newdiffs...)
+			} else {
+				newdiffs := t.deepEqual(
+					fmt.Sprintf("%s.%s", desc, name),
+					want.Field(i), have.Field(i), visited)
+				diffs = append(diffs, newdiffs...)
+			}
+		}
+
+	case reflect.Uintptr:
+		// Uintptr's work like UnsafePointers. We can't evaluate them or
+		// do much with them so we have to cast them into a number and
+		// compare them that way.
+		havePtr := have.Uint()
+		wantPtr := want.Uint()
+		if havePtr != wantPtr {
+			return []string{
+				fmt.Sprintf("%s: not equal.", desc),
+				fmt.Sprintf("have: %#v", have),
+				fmt.Sprintf("want: %#v", want),
+			}
+		}
+
+	case reflect.UnsafePointer:
+		// Unsafe pointers can cause us problems as they fall ill of the
+		// Interface() restrictions. As such we have to special case them
+		// and cast them as integers.
+		havePtr := have.Pointer()
+		wantPtr := want.Pointer()
+		if havePtr != wantPtr {
+			return []string{
+				fmt.Sprintf("%s: not equal.", desc),
+				fmt.Sprintf("have: %#v", have),
+				fmt.Sprintf("want: %#v", want),
+			}
+		}
+
 	default:
-		// Specific low level types:
-		switch want.Interface().(type) {
-		case bool:
-			hbool := have.Interface().(bool)
-			wbool := want.Interface().(bool)
-			if hbool != wbool {
-				return []string{fmt.Sprintf(
-					"%s: have %t, want %t", desc, hbool, wbool)}
-			}
-		case int:
-			hint := have.Interface().(int)
-			wint := want.Interface().(int)
-			if hint != wint {
-				return []string{fmt.Sprintf(
-					"%s: have %d, want %d", desc, hint, wint)}
-			}
-		case int8:
-			hint8 := have.Interface().(int8)
-			wint8 := want.Interface().(int8)
-			if hint8 != wint8 {
-				return []string{fmt.Sprintf(
-					"%s: have %d, want %d", desc, hint8, wint8)}
-			}
-		case int16:
-			hint16 := have.Interface().(int16)
-			wint16 := want.Interface().(int16)
-			if hint16 != wint16 {
-				return []string{fmt.Sprintf(
-					"%s: have %d, want %d", desc, hint16, wint16)}
-			}
-		case int32:
-			hint32 := have.Interface().(int32)
-			wint32 := want.Interface().(int32)
-			if hint32 != wint32 {
-				return []string{fmt.Sprintf(
-					"%s: have %d, want %d", desc, hint32, wint32)}
-			}
-		case int64:
-			hint64 := have.Interface().(int64)
-			wint64 := want.Interface().(int64)
-			if hint64 != wint64 {
-				return []string{fmt.Sprintf(
-					"%s: have %d, want %d", desc, hint64, wint64)}
-			}
-		case uint:
-			huint := have.Interface().(uint)
-			wuint := want.Interface().(uint)
-			if huint != wuint {
-				return []string{fmt.Sprintf(
-					"%s: have %d, want %d", desc, huint, wuint)}
-			}
-		case uint8:
-			huint8 := have.Interface().(uint8)
-			wuint8 := want.Interface().(uint8)
-			if huint8 != wuint8 {
-				return []string{fmt.Sprintf(
-					"%s: have %d, want %d", desc, huint8, wuint8)}
-			}
-		case uint16:
-			huint16 := have.Interface().(uint16)
-			wuint16 := want.Interface().(uint16)
-			if huint16 != wuint16 {
-				return []string{fmt.Sprintf(
-					"%s: have %d, want %d", desc, huint16, wuint16)}
-			}
-		case uint32:
-			huint32 := have.Interface().(uint32)
-			wuint32 := want.Interface().(uint32)
-			if huint32 != wuint32 {
-				return []string{fmt.Sprintf(
-					"%s: have %d, want %d", desc, huint32, wuint32)}
-			}
-		case uint64:
-			huint64 := have.Interface().(uint64)
-			wuint64 := want.Interface().(uint64)
-			if huint64 != wuint64 {
-				return []string{fmt.Sprintf(
-					"%s: have %d, want %d", desc, huint64, wuint64)}
-			}
-		case uintptr:
-			huintptr := have.Interface().(uintptr)
-			wuintptr := want.Interface().(uintptr)
-			if huintptr != wuintptr {
-				return []string{fmt.Sprintf(
-					"%s: have %d, want %d", desc, huintptr, wuintptr)}
-			}
-		case float32:
-			hf32 := have.Interface().(float32)
-			wf32 := want.Interface().(float32)
-			if hf32 != wf32 {
-				return []string{fmt.Sprintf(
-					"%s: have %f, want %f", desc, hf32, wf32)}
-			}
-		case float64:
-			hf64 := have.Interface().(float64)
-			wf64 := want.Interface().(float64)
-			if hf64 != wf64 {
-				return []string{fmt.Sprintf(
-					"%s: have %f, want %f", desc, hf64, wf64)}
-			}
-		default:
-			// Normal equality suffices
-			if !reflect.DeepEqual(want.Interface(), have.Interface()) {
-				return []string{
-					fmt.Sprintf("%s: not equal.", desc),
-					fmt.Sprintf("have: %#v", have),
-					fmt.Sprintf("want: %#v", want),
-				}
+		// All other cases are primitive and therefor reflect.DeepEqual
+		// actually handles them very well.
+		if !reflect.DeepEqual(want.Interface(), have.Interface()) {
+			return []string{
+				fmt.Sprintf("%s: not equal.", desc),
+				fmt.Sprintf("have: %#v", have),
+				fmt.Sprintf("want: %#v", want),
 			}
 		}
 	}

@@ -15,7 +15,6 @@
 package testlib
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -37,10 +36,10 @@ func (t *T) RootTempDir() string {
 		var err error
 		var reader *os.File
 		mode := os.FileMode(0777)
-		testLibRootDir, err = ioutil.TempDir("", "golang-testlib")
+		testLibRootDir, err = ioutilTempDir("", "golang-testlib")
 		t.NotEqual(testLibRootDir, "")
 		t.ExpectSuccess(err)
-		t.ExpectSuccess(os.Chmod(testLibRootDir, mode))
+		t.ExpectSuccess(osChmod(testLibRootDir, mode))
 		reader, testLibRootDirStdin, err = os.Pipe()
 		t.ExpectSuccess(err)
 		cmd := exec.Command(os.Args[0], testInterceptorArg,
@@ -59,12 +58,12 @@ func (t *T) RootTempDir() string {
 // once the test has finished executing. This calls RootTempDir() to create the
 // base directory.
 func (t *T) TempDirMode(mode os.FileMode) string {
-	f, err := ioutil.TempDir(t.RootTempDir(), t.Name())
+	f, err := ioutilTempDir(t.RootTempDir(), t.Name())
 	t.ExpectSuccess(err)
 	t.NotEqual(f, "")
-	t.ExpectSuccess(os.Chmod(f, mode))
+	t.ExpectSuccess(osChmod(f, mode))
 	t.AddFinalizer(func() {
-		os.RemoveAll(f)
+		osRemoveAll(f)
 	})
 	return f
 }
@@ -77,12 +76,13 @@ func (t *T) TempDir() string {
 // Creates a temporary file in a temporary directory with a specific mode
 // set on it. This will return the file descriptor of the open file.
 func (t *T) TempFileMode(mode os.FileMode) *os.File {
-	f, err := ioutil.TempFile(t.RootTempDir(), t.Name())
+	f, err := ioutilTempFile(t.RootTempDir(), t.Name())
 	t.ExpectSuccess(err)
-	t.ExpectSuccess(os.Chmod(f.Name(), mode))
+	t.NotEqual(f, nil)
+	t.ExpectSuccess(osChmod(f.Name(), mode))
 	name := f.Name()
 	t.AddFinalizer(func() {
-		os.Remove(name)
+		osRemove(name)
 	})
 	return f
 }
@@ -118,35 +118,45 @@ func (t *T) WriteTempFile(contents string) string {
 const testInterceptorArg = "wledfhs9d8fs9id"
 
 // This function is used to intercept the process startup and check to see if
-// if its a clean up process.
-func init() {
-	if len(os.Args) != 3 {
+// if its a clean up process. Args will be os.Args, and reader will be
+// os.Stdin.
+func initRootTempDir(args []string, reader io.Reader) {
+	if len(args) != 3 {
 		return
-	} else if os.Args[1] != testInterceptorArg {
+	} else if args[1] != testInterceptorArg {
 		return
 	}
 
 	// Only remove files if it is in the operating systems temporary directory
 	// structure. This is a safety trap to prevent us from accidentally
 	// removing files critical to the system.
-	if !strings.HasPrefix(os.Args[2], os.TempDir()) {
-		fmt.Fprintf(os.Stderr, "Refusing to clean a non temporary directory: "+
-			"%s since it is not under %s", os.Args[2], os.TempDir())
-		os.Exit(1)
+	if !strings.HasPrefix(args[2], osTempDir()) {
+		fmtFprintf(os.Stderr, "Refusing to clean a non temporary directory: "+
+			"%s since it is not under %s\n", args[2], osTempDir())
+		osExit(1)
+		return
 	}
 
-	// The parent process holds our Stdin open until it dies, once that happens
+	// The parent process holds our stdin open until it dies, once that happens
 	// we need to remove the directory.
-	if _, err := ioutil.ReadAll(os.Stdin); err != nil {
-		fmt.Fprintf(
+	if _, err := ioutil.ReadAll(reader); err != nil {
+		fmtFprintf(
 			os.Stderr, "Error cleaning up directory %s: %s\n",
-			os.Args[2], err)
-	} else if err := os.RemoveAll(os.Args[2]); err != nil {
-		fmt.Fprintf(
+			args[2], err)
+		osExit(2)
+	} else if err := osRemoveAll(args[2]); err != nil {
+		fmtFprintf(
 			os.Stderr, "Error cleaning up directory %s: %s\n",
-			os.Args[2], err)
+			args[2], err)
+		osExit(3)
+	} else {
+		osExit(0)
 	}
-	os.Exit(0)
+}
+
+// On startup call the initRootTempDir() function.
+func init() {
+	initRootTempDir(os.Args, os.Stdin)
 }
 
 // The private global variables that stores the root directories location

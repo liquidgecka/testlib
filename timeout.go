@@ -45,5 +45,5 @@ func (t *T) TryUntil(
 		runtime.Gosched()
 	}
 
-	t.Fatalf("%sTimeout after %v", prefix, timeout)
+	t.Fatalf("%sTimeout after %s", prefix, timeout)
 }

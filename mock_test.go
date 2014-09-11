@@ -16,6 +16,7 @@ package testlib
 
 import (
 	"runtime"
+	"strings"
 	"sync"
 	"testing"
 )
@@ -43,7 +44,7 @@ type mockT struct {
 	funcSkipped func() bool
 }
 
-func (m *mockT) runTest(t *testing.T, fails bool, f func()) {
+func (m *mockT) runTest(t *testing.T, fails, skips bool, f func(), d string) {
 	m.failed = false
 	m.skipped = false
 
@@ -58,18 +59,31 @@ func (m *mockT) runTest(t *testing.T, fails bool, f func()) {
 	wg.Wait()
 	_, file, line, _ := runtime.Caller(2)
 	if fails && !m.failed {
-		t.Fatalf("\n%s:%d\nTest didn't fail but should have.", file, line)
+		t.Fatalf("%s\n%s:%d\nTest didn't fail but should have.",
+			d, file, line)
 	} else if !fails && m.failed {
-		t.Fatalf("\n%s:%d\nTest failed but shouldn't have.", file, line)
+		t.Fatalf("%s\n%s:%d\nTest failed but shouldn't have.",
+			d, file, line)
+	}
+	if skips && !m.skipped {
+		t.Fatalf("%s\n%s:%d\nTest didn't skip but should have.",
+			d, file, line)
+	} else if !skips && m.skipped {
+		t.Fatalf("%s\n%s:%d\nTest skipped but shouldn't have.",
+			d, file, line)
 	}
 }
 
-func (m *mockT) CheckPass(t *testing.T, f func()) {
-	m.runTest(t, false, f)
+func (m *mockT) CheckPass(t *testing.T, f func(), description ...string) {
+	m.runTest(t, false, false, f, strings.Join(description, " "))
 }
 
-func (m *mockT) CheckFail(t *testing.T, f func()) {
-	m.runTest(t, true, f)
+func (m *mockT) CheckFail(t *testing.T, f func(), description ...string) {
+	m.runTest(t, true, false, f, strings.Join(description, " "))
+}
+
+func (m *mockT) CheckSkips(t *testing.T, f func(), description ...string) {
+	m.runTest(t, false, true, f, strings.Join(description, " "))
 }
 
 // testing.TB compatibility functions.
@@ -164,3 +178,10 @@ func (m *mockT) Skipped() bool {
 }
 
 func (m *mockT) private() {}
+
+// Simple initializer.
+func testSetup() (m *mockT, t *T) {
+	m = new(mockT)
+	t = NewT(m)
+	return
+}
