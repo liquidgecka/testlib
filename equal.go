@@ -98,7 +98,6 @@ func (t *T) isNil(obj interface{}) bool {
 	v := reflect.ValueOf(obj)
 	switch v.Kind() {
 	case reflect.Func:
-	case reflect.Interface:
 	case reflect.Map:
 	case reflect.Ptr:
 	case reflect.Slice:

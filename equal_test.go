@@ -175,9 +175,10 @@ func TestT_EqualAndNotEqual(t *testing.T) {
 	// Basic nil value check.
 	var nilOsFilePtr *os.File
 	var nilStringPtr *string
+	var nilInterface interface{} = nilOsFilePtr
 	var str string
 	runTest(
-		[]interface{}{nil, nilOsFilePtr, nilStringPtr},
+		[]interface{}{nil, nilInterface, nilOsFilePtr, nilStringPtr},
 		[]interface{}{new(os.File), &str})
 
 	// Array check.
