@@ -37,7 +37,7 @@ func TestSomething(t *testing.T) {
     // the file should exist we can use ExpectSuccess to assert that the
     // call succeeded without error. If err is not nil then the test will be
     // terminated with a call to Fatal.
-    contents, err := os.Open(tmpFile)
+    contents, err := ioutil.ReadFile(tmpFile)
     T.ExpectSuccess(err)
 
     // Next we can check that the read results match the contents we wrote
