@@ -57,25 +57,4 @@
 // through objects verifying that they are in fact equal, regardless of types.
 // Unlike most other implementations this will also follow pointers to ensure
 // that referenced data is also equal.
-//
-// Examples
-//
-// Note that the traditional Go Examples functionality is hindered since
-// calls to T assume that you are starting in a unit test (and therefor
-// have access to a *testing.T object). What follows are some simple pasted
-// examples showing how the code can look.
-//
-// This example shows how easy it would be to test the ioutil.ReadFile
-// function using testlib. The temporary file will be automatically cleaned at
-// the end of the test. TestSuccess will automatically Fatalf if ReadFile
-// returned an error, and Equal() will Fatalf if the read value does not match
-// what we write.
-//  func TestIoReadAll(t *testing.T) {
-//      T := testlib.NewT(t)
-//      defer T.Finish()
-//      tempFile := T.WriteTempFile("contents")
-//      contents, err := ioutil.ReadFile(tempFile)
-//      T.ExpectSuccess(err)
-//      T.Equal(contents, []byte("contents"))
-//  }
 package testlib

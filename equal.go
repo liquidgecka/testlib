@@ -116,16 +116,16 @@ func (t *T) deepEqual(
 	} else if !want.IsValid() && have.IsValid() {
 		// This is rare, not sure how to document this better.
 		return []string{
-			fmt.Sprintf("%s: have invalid object.", desc),
+			fmt.Sprintf("%s: have invalid or nil object.", desc),
 		}
 	} else if want.IsValid() && !have.IsValid() {
 		// This is rare, not sure how to document this better.
 		return []string{
-			fmt.Sprintf("%s: wanted a valid object.", desc),
+			fmt.Sprintf("%s: wanted a valid, non nil object.", desc),
 		}
 	} else if want.Type() != have.Type() {
 		return []string{fmt.Sprintf(
-			"%s: Not the same type, have: '%s', want: '%s'",
+			"%s: Not the same type have: '%s', want: '%s'",
 			desc, have.Type(), want.Type())}
 	}
 
@@ -160,13 +160,13 @@ func (t *T) deepEqual(
 	checkNil := func() bool {
 		if want.IsNil() && !have.IsNil() {
 			diffs = append(diffs, fmt.Sprintf("%s: not equal.", desc))
-			diffs = append(diffs, fmt.Sprintf("have %#v", have))
-			diffs = append(diffs, "want: nil")
+			diffs = append(diffs, fmt.Sprintf("  have: %#v", have.Interface()))
+			diffs = append(diffs, "  wantA: nil")
 			return true
 		} else if !want.IsNil() && have.IsNil() {
 			diffs = append(diffs, fmt.Sprintf("%s: not equal.", desc))
-			diffs = append(diffs, "have: nil")
-			diffs = append(diffs, fmt.Sprintf("want %#v", want))
+			diffs = append(diffs, "  have: nil")
+			diffs = append(diffs, fmt.Sprintf("  wantB: %#v", want.Interface()))
 			return true
 		}
 		return false
@@ -178,8 +178,8 @@ func (t *T) deepEqual(
 			diffs = append(diffs, fmt.Sprintf(
 				"%s: (len(have): %d, len(want): %d)",
 				desc, have.Len(), want.Len()))
-			diffs = append(diffs, fmt.Sprintf("have: %#v", have))
-			diffs = append(diffs, fmt.Sprintf("want: %#v", want))
+			diffs = append(diffs, fmt.Sprintf("  have: %#v", have.Interface()))
+			diffs = append(diffs, fmt.Sprintf("  want: %#v", want.Interface()))
 			return true
 		}
 		return false
@@ -204,7 +204,8 @@ func (t *T) deepEqual(
 		wcap := want.Cap()
 		if hcap != wcap {
 			diffs = append(diffs, fmt.Sprintf(
-				"%sCapacities differ:\n, have: %d\nwant: %d", desc, hcap, wcap))
+				"%sCapacities differ:\n  have: %d\n  want: %d",
+				desc, hcap, wcap))
 			return diffs
 		}
 
@@ -227,8 +228,8 @@ func (t *T) deepEqual(
 					// Add the error.
 					diffs = append(diffs, fmt.Sprintf(
 						"%sExpected key [%q] is missing.", desc, k))
-					diffs = append(diffs, "have: not present")
-					diffs = append(diffs, fmt.Sprintf("want: %#v",
+					diffs = append(diffs, "  have: not present")
+					diffs = append(diffs, fmt.Sprintf("  want: %#v",
 						want.MapIndex(k)))
 					continue
 				}
@@ -243,8 +244,8 @@ func (t *T) deepEqual(
 					diffs = append(diffs, fmt.Sprintf(
 						"%sUnexpected key [%q].", desc, k))
 					diffs = append(diffs,
-						fmt.Sprintf("have: %#v", have.MapIndex(k)))
-					diffs = append(diffs, "want: not present")
+						fmt.Sprintf("  have: %#v", have.MapIndex(k)))
+					diffs = append(diffs, "  want: not present")
 				}
 			}
 		}
@@ -274,16 +275,16 @@ func (t *T) deepEqual(
 			return []string{
 				fmt.Sprintf("%s: len(have) %d != len(want) %d.",
 					desc, len(hstr), len(wstr)),
-				fmt.Sprintf("have: %#v", hstr),
-				fmt.Sprintf("want: %#v", wstr),
+				fmt.Sprintf("  have: %#v", hstr),
+				fmt.Sprintf("  want: %#v", wstr),
 			}
 		}
 		for i := range hstr {
 			if hstr[i] != wstr[i] {
 				return []string{
 					fmt.Sprintf("%s: difference at index %d.", desc, i),
-					fmt.Sprintf("have: %#v", hstr),
-					fmt.Sprintf("want: %#v", wstr),
+					fmt.Sprintf("  have: %#v", hstr),
+					fmt.Sprintf("  want: %#v", wstr),
 				}
 			}
 		}
@@ -314,8 +315,8 @@ func (t *T) deepEqual(
 		if havePtr != wantPtr {
 			return []string{
 				fmt.Sprintf("%s: not equal.", desc),
-				fmt.Sprintf("have: %#v", have),
-				fmt.Sprintf("want: %#v", want),
+				fmt.Sprintf("  have: %#v", havePtr),
+				fmt.Sprintf("  wantX: %#v", wantPtr),
 			}
 		}
 
@@ -328,8 +329,8 @@ func (t *T) deepEqual(
 		if havePtr != wantPtr {
 			return []string{
 				fmt.Sprintf("%s: not equal.", desc),
-				fmt.Sprintf("have: %#v", have),
-				fmt.Sprintf("want: %#v", want),
+				fmt.Sprintf("  have: %#v", havePtr),
+				fmt.Sprintf("  wantY: %#v", wantPtr),
 			}
 		}
 
@@ -339,8 +340,8 @@ func (t *T) deepEqual(
 		if !reflect.DeepEqual(want.Interface(), have.Interface()) {
 			return []string{
 				fmt.Sprintf("%s: not equal.", desc),
-				fmt.Sprintf("have: %#v", have),
-				fmt.Sprintf("want: %#v", want),
+				fmt.Sprintf("  have: %#v", have.Interface()),
+				fmt.Sprintf("  wantZ: %#v", want.Interface()),
 			}
 		}
 	}
