@@ -43,5 +43,20 @@ func (t *T) ExpectSuccess(err error, desc ...string) {
 	if len(desc) > 0 {
 		prefix = strings.Join(desc, " ") + ": "
 	}
-	t.Fatalf("%sUnexpected error encountered: %#v", prefix, err)
+	t.Fatalf("%sUnexpected error encountered: %#v (%s)",
+		prefix, err, err.Error())
+}
+
+// Fails if the error message does not contain the given string.
+func (t *T) ExpectErrorMessage(err error, msg string, desc ...string) {
+	prefix := ""
+	if len(desc) > 0 {
+		prefix = strings.Join(desc, " ") + ": "
+	}
+	if err == nil {
+		t.Fatalf("%sExpected error was not returned.", prefix)
+	} else if !strings.Contains(err.Error(), msg) {
+		t.Fatalf("%sError message didn't contain the expected message:\n"+
+			"Error message=%s\nExpected string=%s", prefix, err.Error(), msg)
+	}
 }

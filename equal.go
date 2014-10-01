@@ -334,9 +334,75 @@ func (t *T) deepEqual(
 			}
 		}
 
+	case reflect.Bool:
+		haveBool := have.Bool()
+		wantBool := want.Bool()
+		if haveBool != wantBool {
+			return []string{
+				fmt.Sprintf("%s: not equal.", desc),
+				fmt.Sprintf("  have: bool(%t)\n", haveBool),
+				fmt.Sprintf("  want: bool(%t)\n", wantBool),
+			}
+		}
+
+	case reflect.Int:
+		fallthrough
+	case reflect.Int8:
+		fallthrough
+	case reflect.Int16:
+		fallthrough
+	case reflect.Int32:
+		fallthrough
+	case reflect.Int64:
+		// Basic integer types.
+		haveInt := have.Int()
+		wantInt := want.Int()
+		if haveInt != wantInt {
+			return []string{
+				fmt.Sprintf("%s: not equal", desc),
+				fmt.Sprintf("  have: %s(%d)\n", have.Type(), haveInt),
+				fmt.Sprintf("  want: %s(%d)\n", want.Type(), wantInt),
+			}
+		}
+
+	case reflect.Uint:
+		fallthrough
+	case reflect.Uint8:
+		fallthrough
+	case reflect.Uint16:
+		fallthrough
+	case reflect.Uint32:
+		fallthrough
+	case reflect.Uint64:
+		// Basic unsigned integer types.
+		haveUint := have.Uint()
+		wantUint := want.Uint()
+		if haveUint != wantUint {
+			return []string{
+				fmt.Sprintf("%s: not equal", desc),
+				fmt.Sprintf("  have: %s(%d)\n", have.Type(), haveUint),
+				fmt.Sprintf("  want: %s(%d)\n", want.Type(), wantUint),
+			}
+		}
+
+	case reflect.Float32:
+		fallthrough
+	case reflect.Float64:
+		// Float types.
+		haveFloat := have.Float()
+		wantFloat := want.Float()
+		if haveFloat != wantFloat {
+			return []string{
+				fmt.Sprintf("%s: not equal", desc),
+				fmt.Sprintf("  have: %s(%f)\n", have.Type(), haveFloat),
+				fmt.Sprintf("  want: %s(%f)\n", want.Type(), wantFloat),
+			}
+		}
+
 	default:
 		// All other cases are primitive and therefor reflect.DeepEqual
 		// actually handles them very well.
+		fmt.Printf("%s   %s %s\n", desc, have.Type(), want.Type())
 		if !reflect.DeepEqual(want.Interface(), have.Interface()) {
 			return []string{
 				fmt.Sprintf("%s: not equal.", desc),
