@@ -41,7 +41,7 @@ func (t *T) Equal(have, want interface{}, desc ...string) {
 	} else if haveNil && !wantNil {
 		t.Fatalf("%sExpected non nil, got nil.", prefix)
 	} else if !haveNil && wantNil {
-		t.Fatalf("%sExpected nil, got nil.", prefix)
+		t.Fatalf("%sExpected nil, got non nil.", prefix)
 	}
 
 	// Next we need to get the value of both objects so we can compare them.
