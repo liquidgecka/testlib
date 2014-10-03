@@ -360,8 +360,8 @@ func (t *T) deepEqual(
 		if haveInt != wantInt {
 			return []string{
 				fmt.Sprintf("%s: not equal", desc),
-				fmt.Sprintf("  have: %s(%d)\n", have.Type(), haveInt),
-				fmt.Sprintf("  want: %s(%d)\n", want.Type(), wantInt),
+				fmt.Sprintf("  have: %s(%d)", have.Type(), haveInt),
+				fmt.Sprintf("  want: %s(%d)", want.Type(), wantInt),
 			}
 		}
 
@@ -380,8 +380,8 @@ func (t *T) deepEqual(
 		if haveUint != wantUint {
 			return []string{
 				fmt.Sprintf("%s: not equal", desc),
-				fmt.Sprintf("  have: %s(%d)\n", have.Type(), haveUint),
-				fmt.Sprintf("  want: %s(%d)\n", want.Type(), wantUint),
+				fmt.Sprintf("  have: %s(%d)", have.Type(), haveUint),
+				fmt.Sprintf("  want: %s(%d)", want.Type(), wantUint),
 			}
 		}
 
@@ -394,8 +394,8 @@ func (t *T) deepEqual(
 		if haveFloat != wantFloat {
 			return []string{
 				fmt.Sprintf("%s: not equal", desc),
-				fmt.Sprintf("  have: %s(%f)\n", have.Type(), haveFloat),
-				fmt.Sprintf("  want: %s(%f)\n", want.Type(), wantFloat),
+				fmt.Sprintf("  have: %s(%f)", have.Type(), haveFloat),
+				fmt.Sprintf("  want: %s(%f)", want.Type(), wantFloat),
 			}
 		}
 
