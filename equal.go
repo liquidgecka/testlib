@@ -97,6 +97,7 @@ func (t *T) isNil(obj interface{}) bool {
 	}
 	v := reflect.ValueOf(obj)
 	switch v.Kind() {
+	case reflect.Chan:
 	case reflect.Func:
 	case reflect.Map:
 	case reflect.Ptr:
@@ -316,7 +317,7 @@ func (t *T) deepEqual(
 			return []string{
 				fmt.Sprintf("%s: not equal.", desc),
 				fmt.Sprintf("  have: %#v", havePtr),
-				fmt.Sprintf("  wantX: %#v", wantPtr),
+				fmt.Sprintf("  want: %#v", wantPtr),
 			}
 		}
 
@@ -340,8 +341,8 @@ func (t *T) deepEqual(
 		if haveBool != wantBool {
 			return []string{
 				fmt.Sprintf("%s: not equal.", desc),
-				fmt.Sprintf("  have: bool(%t)\n", haveBool),
-				fmt.Sprintf("  want: bool(%t)\n", wantBool),
+				fmt.Sprintf("  have: bool(%t)", haveBool),
+				fmt.Sprintf("  want: bool(%t)", wantBool),
 			}
 		}
 
@@ -396,18 +397,6 @@ func (t *T) deepEqual(
 				fmt.Sprintf("%s: not equal", desc),
 				fmt.Sprintf("  have: %s(%f)", have.Type(), haveFloat),
 				fmt.Sprintf("  want: %s(%f)", want.Type(), wantFloat),
-			}
-		}
-
-	default:
-		// All other cases are primitive and therefor reflect.DeepEqual
-		// actually handles them very well.
-		fmt.Printf("%s   %s %s\n", desc, have.Type(), want.Type())
-		if !reflect.DeepEqual(want.Interface(), have.Interface()) {
-			return []string{
-				fmt.Sprintf("%s: not equal.", desc),
-				fmt.Sprintf("  have: %#v", have.Interface()),
-				fmt.Sprintf("  wantZ: %#v", want.Interface()),
 			}
 		}
 	}

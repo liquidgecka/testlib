@@ -1,26 +1,37 @@
 language: go
-go:
- - 1.1
- - 1.2
- - 1.3
- - tip
 
 env:
  global:
   secure: "jI/QW81yi0obHOqW63wnQd6PVTxZlJoMnRYapNqdUmm8PSBHMxFgrdZNpdz4w0q/xydm6yHJaPcRehH/MBJwHOKnbwhsv0BxnEzqgQC1rLmv+zZdDBW2Kp6rw0OZXRPyR/1kbvgjhZaJTbSXkS08nGnF2/lAgM1EmR9OMw2xuFQ="
 
+matrix:
+  allow_failures:
+    - go: tip
+  fast_finish: true
+  include:
+    - go: 1.1
+      env: SRC=""
+    - go: 1.2
+      env: SRC="code.google.com/p/go.tools/cmd"
+    - go: 1.3
+      env: SRC="code.google.com/p/go.tools/cmd"
+    - go: tip
+      env: SRC="golang.org/x/tools/cmd"
+
 before_script:
- - go get code.google.com/p/go.tools/cmd/cover
- - go version | egrep -q go1.1 || go get code.google.com/p/go.tools/cmd/vet
- - go get github.com/mattn/goveralls
+  - test -z "$SRC" || go get "$SRC/cover"
+  - test -z "$SRC" || go install "$SRC/cover"
+  - test -z "$SRC" || go get "$SRC/vet"
+  - test -z "$SRC" || go install "$SRC/vet"
+  - test -z "$SRC" || go get github.com/mattn/goveralls
+  - test -z "$SRC" || sudo -E $(which go) install -a -race std
 
 script:
- - test -z "$(gofmt -l . | tee /dev/stderr)"
- - go vet .
- - go test -v
- - go version | egrep -q go1.1 || go test -covermode=count -coverprofile=/tmp/coverage.out
- - go version | egrep -q go1.1 || sudo -E $(which go) install -a -race std
- - go version | egrep -q go1.1 || go test -v -race .
+  - test -z "$(gofmt -l . | tee /dev/stderr)"
+  - go vet .
+  - go test -v
+  - test -z "$SRC" || go test -covermode=count -coverprofile=/tmp/coverage.out
+  - test -z "$SRC" || go test -v -race .
 
 after_script:
  - $HOME/gopath/bin/goveralls -coverprofile=/tmp/coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
