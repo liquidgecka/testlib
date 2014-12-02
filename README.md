@@ -5,7 +5,7 @@ TestLib is a library that improves on Go's internal unit testing framework.
 ## Installation
 
 ```bash
-go get githup.com/liquidgecka/testlib
+go get github.com/liquidgecka/testlib
 ```
 
 ## Usage
