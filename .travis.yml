@@ -24,6 +24,7 @@ before_script:
   - test -z "$SRC" || go get "$SRC/vet"
   - test -z "$SRC" || go install "$SRC/vet"
   - test -z "$SRC" || go get github.com/mattn/goveralls
+  - test -z "$SRC" || go install github.com/mattn/goveralls
   - test -z "$SRC" || sudo -E $(which go) install -a -race std
 
 script:
