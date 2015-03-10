@@ -162,7 +162,7 @@ func (t *T) deepEqual(
 		if want.IsNil() && !have.IsNil() {
 			diffs = append(diffs, fmt.Sprintf("%s: not equal.", desc))
 			diffs = append(diffs, fmt.Sprintf("  have: %#v", have.Interface()))
-			diffs = append(diffs, "  wantA: nil")
+			diffs = append(diffs, "  want: nil")
 			return true
 		} else if !want.IsNil() && have.IsNil() {
 			diffs = append(diffs, fmt.Sprintf("%s: not equal.", desc))
