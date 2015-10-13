@@ -25,7 +25,7 @@ import (
 )
 
 func TestSomething(t *testing.T) {
-    T := testlib.NewTestLib(t)
+    T := testlib.NewT(t)
     defer T.Finish()
 
     // Create a temporary file that will be cleaned up when the test finishes.
