@@ -12,10 +12,12 @@ matrix:
     - go: 1.1
       env: SRC=""
     - go: 1.2
-      env: SRC="code.google.com/p/go.tools/cmd"
+      env: SRC=""
     - go: 1.3
-      env: SRC="code.google.com/p/go.tools/cmd"
+      env: SRC=""
     - go: 1.4
+      env: SRC="golang.org/x/tools/cmd"
+    - go: 1.5
       env: SRC="golang.org/x/tools/cmd"
     - go: tip
       env: SRC="golang.org/x/tools/cmd"
