@@ -27,6 +27,16 @@ import (
 // deep inspect both values to ensure that the full structure tree is equal.
 // It also walks through pointers ensuring that everything is equal.
 func (t *T) Equal(have, want interface{}, desc ...string) {
+	t.EqualWithIgnores(have, want, nil, desc...)
+}
+
+// Like Equal, except the third argument is a list of paths that should not
+// be considered. This can be used to mask out expected differences in objects.
+//
+// The ignores list contains strings which match the output format of Equal.
+func (t *T) EqualWithIgnores(
+	have, want interface{}, ignores []string, desc ...string,
+) {
 	prefix := ""
 	if len(desc) > 0 {
 		prefix = strings.Join(desc, " ") + ": "
@@ -48,7 +58,7 @@ func (t *T) Equal(have, want interface{}, desc ...string) {
 	haveValue := reflect.ValueOf(have)
 	wantValue := reflect.ValueOf(want)
 	visited := make(map[uintptr]*visitedNode)
-	reason := t.deepEqual("", haveValue, wantValue, visited)
+	reason := t.deepEqual("", haveValue, wantValue, ignores, visited)
 	if len(reason) > 0 {
 		t.Fatalf("%sNot Equal\n%s", prefix, strings.Join(reason, "\n"))
 	}
@@ -76,7 +86,7 @@ func (t *T) NotEqual(have, want interface{}, desc ...string) {
 	haveValue := reflect.ValueOf(have)
 	wantValue := reflect.ValueOf(want)
 	visited := make(map[uintptr]*visitedNode)
-	reason := t.deepEqual("", haveValue, wantValue, visited)
+	reason := t.deepEqual("", haveValue, wantValue, nil, visited)
 	if len(reason) == 0 {
 		t.Fatalf("%sValues are not expected to be equal: %#v", prefix, have)
 	}
@@ -110,8 +120,14 @@ func (t *T) isNil(obj interface{}) bool {
 
 // Deep comparison. This is based on golang 1.2's reflect.Equal functionality.
 func (t *T) deepEqual(
-	desc string, have, want reflect.Value, visited map[uintptr]*visitedNode,
+	desc string, have, want reflect.Value, ignores []string,
+	visited map[uintptr]*visitedNode,
 ) (diffs []string) {
+	for _, ignore := range ignores {
+		if desc == ignore {
+			return nil
+		}
+	}
 	if !want.IsValid() && !have.IsValid() {
 		return nil
 	} else if !want.IsValid() && have.IsValid() {
@@ -192,7 +208,7 @@ func (t *T) deepEqual(
 			for i := 0; i < want.Len(); i++ {
 				newdiffs := t.deepEqual(
 					fmt.Sprintf("%s[%d]", desc, i),
-					want.Index(i), have.Index(i), visited)
+					want.Index(i), have.Index(i), ignores, visited)
 				diffs = append(diffs, newdiffs...)
 			}
 		}
@@ -217,7 +233,7 @@ func (t *T) deepEqual(
 	case reflect.Interface:
 		if !checkNil() {
 			newdiffs := t.deepEqual(
-				desc, want.Elem(), have.Elem(), visited)
+				desc, want.Elem(), have.Elem(), ignores, visited)
 			diffs = append(diffs, newdiffs...)
 		}
 
@@ -236,7 +252,7 @@ func (t *T) deepEqual(
 				}
 				newdiffs := t.deepEqual(
 					fmt.Sprintf("%s[%q] ", desc, k),
-					want.MapIndex(k), have.MapIndex(k), visited)
+					want.MapIndex(k), have.MapIndex(k), ignores, visited)
 				diffs = append(diffs, newdiffs...)
 			}
 			for _, k := range have.MapKeys() {
@@ -253,7 +269,7 @@ func (t *T) deepEqual(
 
 	case reflect.Ptr:
 		newdiffs := t.deepEqual(
-			desc, want.Elem(), have.Elem(), visited)
+			desc, want.Elem(), have.Elem(), ignores, visited)
 		diffs = append(diffs, newdiffs...)
 
 	case reflect.Slice:
@@ -261,7 +277,7 @@ func (t *T) deepEqual(
 			for i := 0; i < want.Len(); i++ {
 				newdiffs := t.deepEqual(
 					fmt.Sprintf("%s[%d]", desc, i),
-					want.Index(i), have.Index(i), visited)
+					want.Index(i), have.Index(i), ignores, visited)
 				diffs = append(diffs, newdiffs...)
 			}
 		}
@@ -297,12 +313,12 @@ func (t *T) deepEqual(
 			// first object given to us is a struct.
 			if desc == "" {
 				newdiffs := t.deepEqual(
-					name, want.Field(i), have.Field(i), visited)
+					name, want.Field(i), have.Field(i), ignores, visited)
 				diffs = append(diffs, newdiffs...)
 			} else {
 				newdiffs := t.deepEqual(
 					fmt.Sprintf("%s.%s", desc, name),
-					want.Field(i), have.Field(i), visited)
+					want.Field(i), have.Field(i), ignores, visited)
 				diffs = append(diffs, newdiffs...)
 			}
 		}

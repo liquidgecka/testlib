@@ -301,202 +301,32 @@ func TestT_EqualAndNotEqual(t *testing.T) {
 	}
 }
 
-/*
-
-func TestT_Equal(t *testing.T) {
-	t.Parallel()
-	m := &mockT{}
-	T := NewT(m)
-
-	ct1 := testEqualCustomStruct{Field1: "s", Field2: "t"}
-	ct2 := testEqualCustomStruct{Field1: "s", Field2: "t"}
-	ct3 := testEqualCustomStruct{Field1: "s", Field2: "o"}
-	ctSlice1 := []testEqualCustomStruct{ct1, ct2}
-	ctSlice2 := []testEqualCustomStruct{ct1, ct2}
-	ctSlice3 := []testEqualCustomStruct{ct1, ct3}
-	f1 := func() {}
-	var f2 func()
-	var i1 interface{} = ct1
-	var i2 interface{} = ct1
-	var i3 interface{}
-	mArray1 := [3]*mockT{m, m, m}
-	mArray2 := [3]*mockT{m, m, m}
-	mArray3 := [3]*mockT{m}
-	mSlice1 := []*mockT{m, m, m}
-	mSlice2 := []*mockT{m, m, m}
-	mSlice3 := []*mockT{m, m}
-	myStr1 := testEqualCustomType("one")
-	myStr2 := testEqualCustomType("one")
-	var nilPtr *mockT
-	strMap1 := map[string]int{"A": 1, "B": 2, "C": 3}
-	strMap2 := map[string]int{"C": 3, "B": 2, "A": 1}
-	strMap3 := map[string]int{"C": 3, "B": 2, "A": -1}
-	strMap4 := map[string]int{"C": 3, "B": 2, "D": 3}
-	strSlice1 := []string{"A", "B", "C"}
-	strSlice2 := []string{"A", "B", "C"}
-	strSlice3 := []string{"X", "B", "C"}
-
-	// These tests should all succeed.
-
-
-
-	m.CheckPass(t, func() { T.Equal(ct1, ct2) })
-	m.CheckPass(t, func() { T.Equal(ctSlice1, ctSlice2) })
-	m.CheckPass(t, func() { T.Equal(&i1, &i2) })
-	m.CheckPass(t, func() { T.Equal(f1, f1) })
-	m.CheckPass(t, func() { T.Equal(m, m) })
-	m.CheckPass(t, func() { T.Equal(mArray1, mArray2) })
-	m.CheckPass(t, func() { T.Equal(mSlice1, mSlice2) })
-	m.CheckPass(t, func() { T.Equal(myStr1, myStr2) })
-	m.CheckPass(t, func() { T.Equal(nilPtr, nil) })
-	m.CheckPass(t, func() { T.Equal(nil, nilPtr) })
-	m.CheckPass(t, func() { T.Equal(strMap1, strMap2) })
-	m.CheckPass(t, func() { T.Equal(strSlice1, strSlice2) })
-
-	// Expected failure conditions.
-	m.CheckFail(t, func() { T.Equal(&mockT{}, "A") })
-	m.CheckFail(t, func() { T.Equal(&mockT{}, nil) })
-	m.CheckFail(t, func() { T.Equal(nil, &mockT{}) })
-	m.CheckFail(t, func() { T.Equal([]*mockT{nil}, []*mockT{&mockT{}}) })
-	m.CheckFail(t, func() { T.Equal([]*mockT{&mockT{}}, []*mockT{nil}) })
-	m.CheckFail(t, func() { T.Equal(false, true) })
-	m.CheckFail(t, func() { T.Equal(int(2), int(1)) })
-	m.CheckFail(t, func() { T.Equal(int8(2), int8(1)) })
-	m.CheckFail(t, func() { T.Equal(int16(2), int16(1)) })
-	m.CheckFail(t, func() { T.Equal(int32(2), int32(1)) })
-	m.CheckFail(t, func() { T.Equal(int64(2), int64(1)) })
-	m.CheckFail(t, func() { T.Equal(uint(2), uint(1)) })
-	m.CheckFail(t, func() { T.Equal(uint8(2), uint8(1)) })
-	m.CheckFail(t, func() { T.Equal(uint16(2), uint16(1)) })
-	m.CheckFail(t, func() { T.Equal(uint32(2), uint32(1)) })
-	m.CheckFail(t, func() { T.Equal(uint64(2), uint64(1)) })
-	m.CheckFail(t, func() { T.Equal(uintptr(2), uintptr(1)) })
-	m.CheckFail(t, func() { T.Equal(float32(2), float32(1)) })
-	m.CheckFail(t, func() { T.Equal(float64(2), float64(1)) })
-	m.CheckFail(t, func() { T.Equal("2", "1") })
-	m.CheckFail(t, func() { T.Equal("22", "1") })
-	m.CheckFail(t, func() { T.Equal(ct1, ct3) })
-	m.CheckFail(t, func() { T.Equal(ctSlice1, ctSlice3) })
-	m.CheckFail(t, func() { T.Equal(&i1, &i3) })
-	m.CheckFail(t, func() { T.Equal(f1, f2) })
-	m.CheckFail(t, func() { T.Equal(mArray1, mArray3) })
-	m.CheckFail(t, func() { T.Equal(mSlice1, mSlice3) })
-	m.CheckFail(t, func() { T.Equal(strMap1, strMap3) })
-	m.CheckFail(t, func() { T.Equal(strMap1, strMap4) })
-	m.CheckFail(t, func() { T.Equal(strSlice1, strSlice3) })
-
-	// Check the returned error message.
-	msg := ""
-	m.funcFatal = func(args ...interface{}) {
-		msg = fmt.Sprint(args...)
-	}
-	m.CheckFail(t, func() { T.Equal(1, 2, "prefix") })
-    if !strings.HasPrefix(msg, "prefix: ") {
-		t.Fatalf("Error message did not contain the prefix: '''%s'''", msg)
-	}
+type testObject struct {
+	str   string
+	link1 *testObject
+	link2 *testObject
 }
 
-func TestT_NotEqual(t *testing.T) {
+func TestEqualWithIgnores(t *testing.T) {
 	t.Parallel()
-	m := &mockT{}
-	T := NewT(m)
 
-	ct1 := testEqualCustomStruct{Field1: "s", Field2: "t"}
-	ct2 := testEqualCustomStruct{Field1: "s", Field2: "t"}
-	ct3 := testEqualCustomStruct{Field1: "s", Field2: "o"}
-	ctSlice1 := []testEqualCustomStruct{ct1, ct2}
-	ctSlice2 := []testEqualCustomStruct{ct1, ct2}
-	ctSlice3 := []testEqualCustomStruct{ct1, ct3}
-	f1 := func() {}
-	var f2 func()
-	var i1 interface{} = ct1
-	var i2 interface{} = ct2
-	var i3 interface{}
-	mArray1 := [3]*mockT{m, m, m}
-	mArray2 := [3]*mockT{m, m, m}
-	mArray3 := [3]*mockT{m}
-	mSlice1 := []*mockT{m, m, m}
-	mSlice2 := []*mockT{m, m, m}
-	mSlice3 := []*mockT{m, m}
-	var nilPtr *mockT
-	strMap1 := map[string]int{"A": 1, "B": 2, "C": 3}
-	strMap2 := map[string]int{"C": 3, "B": 2, "A": 1}
-	strMap3 := map[string]int{"C": 3, "B": 2, "A": -1}
-	strMap4 := map[string]int{"C": 3, "B": 2, "D": 3}
-	strSlice1 := []string{"A", "B", "C"}
-	strSlice2 := []string{"A", "B", "C"}
-	strSlice3 := []string{"X", "B", "C"}
-
-	// CheckFailure cases.
-	m.CheckFail(t, func() { T.NotEqual(nil, nil) })
-	m.CheckFail(t, func() { T.NotEqual(true, true) })
-	m.CheckFail(t, func() { T.NotEqual(int(1), int(1)) })
-	m.CheckFail(t, func() { T.NotEqual(int8(1), int8(1)) })
-	m.CheckFail(t, func() { T.NotEqual(int16(1), int16(1)) })
-	m.CheckFail(t, func() { T.NotEqual(int32(1), int32(1)) })
-	m.CheckFail(t, func() { T.NotEqual(int64(1), int64(1)) })
-	m.CheckFail(t, func() { T.NotEqual(uint(1), uint(1)) })
-	m.CheckFail(t, func() { T.NotEqual(uint8(1), uint8(1)) })
-	m.CheckFail(t, func() { T.NotEqual(uint16(1), uint16(1)) })
-	m.CheckFail(t, func() { T.NotEqual(uint32(1), uint32(1)) })
-	m.CheckFail(t, func() { T.NotEqual(uint64(1), uint64(1)) })
-	m.CheckFail(t, func() { T.NotEqual(uintptr(1), uintptr(1)) })
-	m.CheckFail(t, func() { T.NotEqual(float32(1), float32(1)) })
-	m.CheckFail(t, func() { T.NotEqual(float64(1), float64(1)) })
-	m.CheckFail(t, func() { T.NotEqual("1", "1") })
-	m.CheckFail(t, func() { T.NotEqual(ct1, ct2) })
-	m.CheckFail(t, func() { T.NotEqual(ctSlice1, ctSlice2) })
-	m.CheckFail(t, func() { T.NotEqual(&i1, &i2) })
-	m.CheckFail(t, func() { T.NotEqual(f1, f1) })
-	m.CheckFail(t, func() { T.NotEqual(m, m) })
-	m.CheckFail(t, func() { T.NotEqual(mArray1, mArray2) })
-	m.CheckFail(t, func() { T.NotEqual(mSlice1, mSlice2) })
-	m.CheckFail(t, func() { T.NotEqual(nilPtr, nil) })
-	m.CheckFail(t, func() { T.NotEqual(nil, nilPtr) })
-	m.CheckFail(t, func() { T.NotEqual(strMap1, strMap2) })
-	m.CheckFail(t, func() { T.NotEqual(strSlice1, strSlice2) })
-
-	// Non failure cases.
-	m.CheckPass(t, func() { T.NotEqual(&mockT{}, "A") })
-	m.CheckPass(t, func() { T.NotEqual(&mockT{}, nil) })
-	m.CheckPass(t, func() { T.NotEqual(nil, &mockT{}) })
-	m.CheckPass(t, func() { T.NotEqual([]*mockT{nil}, []*mockT{&mockT{}}) })
-	m.CheckPass(t, func() { T.NotEqual([]*mockT{&mockT{}}, []*mockT{nil}) })
-	m.CheckPass(t, func() { T.NotEqual(false, true) })
-	m.CheckPass(t, func() { T.NotEqual(int(2), int(1)) })
-	m.CheckPass(t, func() { T.NotEqual(int8(2), int8(1)) })
-	m.CheckPass(t, func() { T.NotEqual(int16(2), int16(1)) })
-	m.CheckPass(t, func() { T.NotEqual(int32(2), int32(1)) })
-	m.CheckPass(t, func() { T.NotEqual(int64(2), int64(1)) })
-	m.CheckPass(t, func() { T.NotEqual(uint(2), uint(1)) })
-	m.CheckPass(t, func() { T.NotEqual(uint8(2), uint8(1)) })
-	m.CheckPass(t, func() { T.NotEqual(uint16(2), uint16(1)) })
-	m.CheckPass(t, func() { T.NotEqual(uint32(2), uint32(1)) })
-	m.CheckPass(t, func() { T.NotEqual(uint64(2), uint64(1)) })
-	m.CheckPass(t, func() { T.NotEqual(uintptr(2), uintptr(1)) })
-	m.CheckPass(t, func() { T.NotEqual(float32(2), float32(1)) })
-	m.CheckPass(t, func() { T.NotEqual(float64(2), float64(1)) })
-	m.CheckPass(t, func() { T.NotEqual("2", "1") })
-	m.CheckPass(t, func() { T.NotEqual("22", "1") })
-	m.CheckPass(t, func() { T.NotEqual(ct1, ct3) })
-	m.CheckPass(t, func() { T.NotEqual(ctSlice1, ctSlice3) })
-	m.CheckPass(t, func() { T.NotEqual(&i1, &i3) })
-	m.CheckPass(t, func() { T.NotEqual(f1, f2) })
-	m.CheckPass(t, func() { T.NotEqual(mArray1, mArray3) })
-	m.CheckPass(t, func() { T.NotEqual(mSlice1, mSlice3) })
-	m.CheckPass(t, func() { T.NotEqual(strMap1, strMap3) })
-	m.CheckPass(t, func() { T.NotEqual(strMap1, strMap4) })
-	m.CheckPass(t, func() { T.NotEqual(strSlice1, strSlice3) })
-
-	// Check the returned error message.
-	msg := ""
-	m.funcFatal = func(args ...interface{}) {
-		msg = fmt.Sprint(args...)
+	have := &testObject{
+		str:   "same1",
+		link1: &testObject{str: "same2"},
+		link2: &testObject{str: "different_have"},
 	}
-	m.CheckFail(t, func() { T.NotEqual(1, 1, "prefix") })
-    if !strings.HasPrefix(msg, "prefix: ") {
-		t.Fatalf("Error message did not contain the prefix: '''%s'''", msg)
+	want := &testObject{
+		str:   "same1",
+		link1: &testObject{str: "same2"},
+		link2: &testObject{str: "different_want"},
 	}
+
+	m, T := testSetup()
+	m.CheckFail(t, func() { T.Equal(have, want) })
+	m.CheckPass(t, func() {
+		T.EqualWithIgnores(have, want, []string{"link2.str"})
+	})
+	m.CheckFail(t, func() {
+		T.EqualWithIgnores(have, want, []string{"link1.str"})
+	})
 }
-
-*/
