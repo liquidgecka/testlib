@@ -183,7 +183,7 @@ func (t *T) deepEqual(
 		} else if !want.IsNil() && have.IsNil() {
 			diffs = append(diffs, fmt.Sprintf("%s: not equal.", desc))
 			diffs = append(diffs, "  have: nil")
-			diffs = append(diffs, fmt.Sprintf("  wantB: %#v", want.Interface()))
+			diffs = append(diffs, fmt.Sprintf("  want: %#v", want.Interface()))
 			return true
 		}
 		return false
@@ -208,7 +208,7 @@ func (t *T) deepEqual(
 			for i := 0; i < want.Len(); i++ {
 				newdiffs := t.deepEqual(
 					fmt.Sprintf("%s[%d]", desc, i),
-					want.Index(i), have.Index(i), ignores, visited)
+					have.Index(i), want.Index(i), ignores, visited)
 				diffs = append(diffs, newdiffs...)
 			}
 		}
@@ -233,7 +233,7 @@ func (t *T) deepEqual(
 	case reflect.Interface:
 		if !checkNil() {
 			newdiffs := t.deepEqual(
-				desc, want.Elem(), have.Elem(), ignores, visited)
+				desc, have.Elem(), want.Elem(), ignores, visited)
 			diffs = append(diffs, newdiffs...)
 		}
 
@@ -252,7 +252,7 @@ func (t *T) deepEqual(
 				}
 				newdiffs := t.deepEqual(
 					fmt.Sprintf("%s[%q] ", desc, k),
-					want.MapIndex(k), have.MapIndex(k), ignores, visited)
+					have.MapIndex(k), want.MapIndex(k), ignores, visited)
 				diffs = append(diffs, newdiffs...)
 			}
 			for _, k := range have.MapKeys() {
@@ -269,7 +269,7 @@ func (t *T) deepEqual(
 
 	case reflect.Ptr:
 		newdiffs := t.deepEqual(
-			desc, want.Elem(), have.Elem(), ignores, visited)
+			desc, have.Elem(), want.Elem(), ignores, visited)
 		diffs = append(diffs, newdiffs...)
 
 	case reflect.Slice:
@@ -277,7 +277,7 @@ func (t *T) deepEqual(
 			for i := 0; i < want.Len(); i++ {
 				newdiffs := t.deepEqual(
 					fmt.Sprintf("%s[%d]", desc, i),
-					want.Index(i), have.Index(i), ignores, visited)
+					have.Index(i), want.Index(i), ignores, visited)
 				diffs = append(diffs, newdiffs...)
 			}
 		}
@@ -313,12 +313,12 @@ func (t *T) deepEqual(
 			// first object given to us is a struct.
 			if desc == "" {
 				newdiffs := t.deepEqual(
-					name, want.Field(i), have.Field(i), ignores, visited)
+					name, have.Field(i), want.Field(i), ignores, visited)
 				diffs = append(diffs, newdiffs...)
 			} else {
 				newdiffs := t.deepEqual(
 					fmt.Sprintf("%s.%s", desc, name),
-					want.Field(i), have.Field(i), ignores, visited)
+					have.Field(i), want.Field(i), ignores, visited)
 				diffs = append(diffs, newdiffs...)
 			}
 		}
@@ -347,7 +347,7 @@ func (t *T) deepEqual(
 			return []string{
 				fmt.Sprintf("%s: not equal.", desc),
 				fmt.Sprintf("  have: %#v", havePtr),
-				fmt.Sprintf("  wantY: %#v", wantPtr),
+				fmt.Sprintf("  want: %#v", wantPtr),
 			}
 		}
 
