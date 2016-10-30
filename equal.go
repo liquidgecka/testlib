@@ -86,36 +86,36 @@ func (t *T) equalWithIgnoresPrefix_(
 
 // Like Equal() except that it asserts that the two values are not equal
 // to each other.
-func (t *T) NotEqual(have, want interface{}, desc ...string) {
+func (t *T) NotEqual(have, unwanted interface{}, desc ...string) {
 	prefix := ""
 	if len(desc) > 0 {
 		prefix = strings.Join(desc, " ") + ": "
 	}
-	t.notEqualPrefix_(have, want, prefix)
+	t.notEqualPrefix_(have, unwanted, prefix)
 }
 
 // NotEqualf is NotEqual using Printf style format strings.
-func (t *T) NotEqualf(have, want interface{}, spec string, args ...interface{}) {
+func (t *T) NotEqualf(have, unwanted interface{}, spec string, args ...interface{}) {
 	prefix := fmt.Sprintf(spec, args...) + ": "
-	t.notEqualPrefix_(have, want, prefix)
+	t.notEqualPrefix_(have, unwanted, prefix)
 }
 
-func (t *T) notEqualPrefix_(have, want interface{}, prefix string) {
+func (t *T) notEqualPrefix_(have, unwanted interface{}, prefix string) {
 	// Check to see if either value is nil and then verify that the are
 	// either both nil, or fail if one is nil.
 	haveNil := t.isNil(have)
-	wantNil := t.isNil(want)
-	if haveNil && wantNil {
+	unwantedNil := t.isNil(unwanted)
+	if haveNil && unwantedNil {
 		t.Fatalf("%sEquality not expected, have=nil", prefix)
-	} else if haveNil || wantNil {
+	} else if haveNil || unwantedNil {
 		return
 	}
 
 	// Next we need to get the value of both objects so we can compare them.
 	haveValue := reflect.ValueOf(have)
-	wantValue := reflect.ValueOf(want)
+	unwantedValue := reflect.ValueOf(unwanted)
 	visited := make(map[uintptr]*visitedNode)
-	reason := t.deepEqual("", haveValue, wantValue, nil, visited)
+	reason := t.deepEqual("", haveValue, unwantedValue, nil, visited)
 	if len(reason) == 0 {
 		t.Fatalf("%sValues are not expected to be equal: %#v", prefix, have)
 	}
