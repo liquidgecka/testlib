@@ -15,6 +15,7 @@
 package testlib
 
 import (
+	"fmt"
 	"runtime"
 	"strings"
 	"time"
@@ -33,6 +34,27 @@ func (t *T) TryUntil(
 	if len(desc) > 0 {
 		prefix = strings.Join(desc, " ") + ": "
 	}
+
+	end := time.Now().Add(timeout)
+	for time.Now().Before(end) {
+		if f() {
+			return
+		}
+		// Yield the processor so that other goroutines have a chance to work.
+		// This is necessary since the function may not actually sleep at
+		// all.
+		runtime.Gosched()
+	}
+
+	t.Fatalf("%sTimeout after %s", prefix, timeout)
+}
+
+// TryUntilf is the same as TryUntil but uses Printf formatting for the
+// description message.
+func (t *T) TryUntilf(
+	f func() bool, timeout time.Duration, spec string, args ...interface{},
+) {
+	prefix := fmt.Sprintf(spec, args...) + ": "
 
 	end := time.Now().Add(timeout)
 	for time.Now().Before(end) {

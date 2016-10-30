@@ -45,6 +45,21 @@ func TestT_TryUntilFails(t *testing.T) {
 	}
 }
 
+func TestT_TryUntilfFails(t *testing.T) {
+	t.Parallel()
+	m, T := testSetup()
+	msg := ""
+	m.funcFatal = func(args ...interface{}) {
+		msg = fmt.Sprint(args...)
+	}
+	m.CheckFail(t, func() {
+		T.TryUntilf(func() bool { return false }, time.Second/100, "foo %d", 2)
+	})
+	if !strings.HasPrefix(msg, "foo 2: ") {
+		t.Fatalf("Error message did not contain the prefix: '''%s'''", msg)
+	}
+}
+
 func TestT_TryUntilYield(t *testing.T) {
 	t.Parallel()
 	m, T := testSetup()

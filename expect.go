@@ -82,3 +82,15 @@ func (t *T) ExpectErrorMessage(err error, msg string, desc ...string) {
 			"Error message=%s\nExpected string=%s", prefix, err.Error(), msg)
 	}
 }
+
+// ExpectErrorMessagef fails if the error message does not contain the
+// given string; message formatted per Printf.
+func (t *T) ExpectErrorMessagef(err error, msg string, spec string, args ...interface{}) {
+	prefix := fmt.Sprintf(spec, args...) + ": "
+	if err == nil {
+		t.Fatalf("%sExpected error was not returned.", prefix)
+	} else if !strings.Contains(err.Error(), msg) {
+		t.Fatalf("%sError message didn't contain the expected message:\n"+
+			"Error message=%s\nExpected string=%s", prefix, err.Error(), msg)
+	}
+}
