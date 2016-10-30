@@ -30,6 +30,12 @@ func (t *T) Equal(have, want interface{}, desc ...string) {
 	t.EqualWithIgnores(have, want, nil, desc...)
 }
 
+// Equalf is the same as Equal but uses Printf style formatting to construct
+// the description message.
+func (t *T) Equalf(have, want interface{}, spec string, args ...interface{}) {
+	t.EqualWithIgnoresf(have, want, nil, spec, args...)
+}
+
 // Like Equal, except the third argument is a list of paths that should not
 // be considered. This can be used to mask out expected differences in objects.
 //
@@ -41,7 +47,21 @@ func (t *T) EqualWithIgnores(
 	if len(desc) > 0 {
 		prefix = strings.Join(desc, " ") + ": "
 	}
+	t.equalWithIgnoresPrefix_(have, want, ignores, prefix)
+}
 
+// EqualWithIgnoresf is the same as EqualWithIgnores but uses Printf
+// formatting for the description.
+func (t *T) EqualWithIgnoresf(
+	have, want interface{}, ignores []string, spec string, args ...interface{},
+) {
+	prefix := fmt.Sprintf(spec, args...) + ": "
+	t.equalWithIgnoresPrefix_(have, want, ignores, prefix)
+}
+
+func (t *T) equalWithIgnoresPrefix_(
+	have, want interface{}, ignores []string, prefix string,
+) {
 	// Check to see if either value is nil and then verify that the are
 	// either both nil, or fail if one is nil.
 	haveNil := t.isNil(have)
@@ -66,27 +86,36 @@ func (t *T) EqualWithIgnores(
 
 // Like Equal() except that it asserts that the two values are not equal
 // to each other.
-func (t *T) NotEqual(have, want interface{}, desc ...string) {
+func (t *T) NotEqual(have, unwanted interface{}, desc ...string) {
 	prefix := ""
 	if len(desc) > 0 {
 		prefix = strings.Join(desc, " ") + ": "
 	}
+	t.notEqualPrefix_(have, unwanted, prefix)
+}
 
+// NotEqualf is NotEqual using Printf style format strings.
+func (t *T) NotEqualf(have, unwanted interface{}, spec string, args ...interface{}) {
+	prefix := fmt.Sprintf(spec, args...) + ": "
+	t.notEqualPrefix_(have, unwanted, prefix)
+}
+
+func (t *T) notEqualPrefix_(have, unwanted interface{}, prefix string) {
 	// Check to see if either value is nil and then verify that the are
 	// either both nil, or fail if one is nil.
 	haveNil := t.isNil(have)
-	wantNil := t.isNil(want)
-	if haveNil && wantNil {
+	unwantedNil := t.isNil(unwanted)
+	if haveNil && unwantedNil {
 		t.Fatalf("%sEquality not expected, have=nil", prefix)
-	} else if haveNil || wantNil {
+	} else if haveNil || unwantedNil {
 		return
 	}
 
 	// Next we need to get the value of both objects so we can compare them.
 	haveValue := reflect.ValueOf(have)
-	wantValue := reflect.ValueOf(want)
+	unwantedValue := reflect.ValueOf(unwanted)
 	visited := make(map[uintptr]*visitedNode)
-	reason := t.deepEqual("", haveValue, wantValue, nil, visited)
+	reason := t.deepEqual("", haveValue, unwantedValue, nil, visited)
 	if len(reason) == 0 {
 		t.Fatalf("%sValues are not expected to be equal: %#v", prefix, have)
 	}

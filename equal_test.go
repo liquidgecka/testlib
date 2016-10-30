@@ -66,34 +66,42 @@ func TestT_EqualAndNotEqual(t *testing.T) {
 		for _, s1 := range same {
 			// Ensure equality for all of the "same" objects.
 			for _, s2 := range same {
-				description := fmt.Sprintf("Equal() failed for:\n%s\n%s",
+				description := fmt.Sprintf("Equal*() failed for:\n%s\n%s",
 					describe(s1), describe(s2))
 				m.CheckPass(t, func() { T.Equal(s1, s2) }, description)
-				description = fmt.Sprintf("Equal() failed for:\n%s\n%s",
+				m.CheckPass(t, func() { T.Equalf(s1, s2, "%d", 1) }, description)
+				description = fmt.Sprintf("Equal*() failed for:\n%s\n%s",
 					describe(s2), describe(s1))
 				m.CheckPass(t, func() { T.Equal(s2, s1) }, description)
-				description = fmt.Sprintf("NotEqual() passed for:\n%s\n%s",
+				m.CheckPass(t, func() { T.Equalf(s2, s1, "%d", 2) }, description)
+				description = fmt.Sprintf("NotEqual*() passed for:\n%s\n%s",
 					describe(s1), describe(s2))
 				m.CheckFail(t, func() { T.NotEqual(s1, s2) }, description)
-				description = fmt.Sprintf("NotEqual() passed for:\n%s\n%s",
+				m.CheckFail(t, func() { T.NotEqualf(s1, s2, "%d", 3) }, description)
+				description = fmt.Sprintf("NotEqual*() passed for:\n%s\n%s",
 					describe(s2), describe(s1))
 				m.CheckFail(t, func() { T.NotEqual(s2, s1) }, description)
+				m.CheckFail(t, func() { T.NotEqualf(s2, s1, "%d", 4) }, description)
 			}
 
 			// Ensure non-equality for all of the "diff" objects.
 			for _, d := range diff {
-				description := fmt.Sprintf("Equal() passed for:\n%s\n%s",
+				description := fmt.Sprintf("Equal*() passed for:\n%s\n%s",
 					describe(s1), describe(d))
 				m.CheckFail(t, func() { T.Equal(s1, d) }, description)
-				description = fmt.Sprintf("Equal() passed for:\n%s\n%s",
+				m.CheckFail(t, func() { T.Equalf(s1, d, "%d", 5) }, description)
+				description = fmt.Sprintf("Equal*() passed for:\n%s\n%s",
 					describe(d), describe(s1))
 				m.CheckFail(t, func() { T.Equal(d, s1) }, description)
-				description = fmt.Sprintf("NotEqual() failed for:\n%s\n%s",
+				m.CheckFail(t, func() { T.Equalf(d, s1, "%d", 6) }, description)
+				description = fmt.Sprintf("NotEqual*() failed for:\n%s\n%s",
 					describe(s1), describe(d))
 				m.CheckPass(t, func() { T.NotEqual(s1, d) }, description)
-				description = fmt.Sprintf("NotEqual() failed for:\n%s\n%s",
+				m.CheckPass(t, func() { T.NotEqualf(s1, d, "%d", 7) }, description)
+				description = fmt.Sprintf("NotEqual*() failed for:\n%s\n%s",
 					describe(d), describe(s1))
 				m.CheckPass(t, func() { T.NotEqual(d, s1) }, description)
+				m.CheckPass(t, func() { T.NotEqualf(d, s1, "%d", 8) }, description)
 			}
 		}
 	}
@@ -322,11 +330,37 @@ func TestEqualWithIgnores(t *testing.T) {
 	}
 
 	m, T := testSetup()
-	m.CheckFail(t, func() { T.Equal(have, want) })
+	m.CheckFail(t, func() { T.Equal(have, want, "prefix") })
+	m.CheckFail(t, func() { T.EqualWithIgnores(have, want, nil, "prefix") })
 	m.CheckPass(t, func() {
-		T.EqualWithIgnores(have, want, []string{"link2.str"})
+		T.EqualWithIgnores(have, want, []string{"link2.str"}, "prefix")
 	})
 	m.CheckFail(t, func() {
-		T.EqualWithIgnores(have, want, []string{"link1.str"})
+		T.EqualWithIgnores(have, want, []string{"link1.str"}, "prefix")
+	})
+}
+
+func TestEqualWithIgnoresf(t *testing.T) {
+	t.Parallel()
+
+	have := &testObject{
+		str:   "same1",
+		link1: &testObject{str: "same2"},
+		link2: &testObject{str: "different_have"},
+	}
+	want := &testObject{
+		str:   "same1",
+		link1: &testObject{str: "same2"},
+		link2: &testObject{str: "different_want"},
+	}
+
+	m, T := testSetup()
+	m.CheckFail(t, func() { T.Equalf(have, want, "foo %d", 1) })
+	m.CheckFail(t, func() { T.EqualWithIgnoresf(have, want, nil, "foo %d", 2) })
+	m.CheckPass(t, func() {
+		T.EqualWithIgnoresf(have, want, []string{"link2.str"}, "foo %d", 3)
+	})
+	m.CheckFail(t, func() {
+		T.EqualWithIgnoresf(have, want, []string{"link1.str"}, "foo %d", 4)
 	})
 }
