@@ -30,6 +30,14 @@ func TestT_TryUntilPasses(t *testing.T) {
 	})
 }
 
+func TestT_TryUntilfPasses(t *testing.T) {
+	t.Parallel()
+	m, T := testSetup()
+	m.CheckPass(t, func() {
+		T.TryUntilf(func() bool { return true }, time.Second, "foo %d", 1)
+	})
+}
+
 func TestT_TryUntilFails(t *testing.T) {
 	t.Parallel()
 	m, T := testSetup()
