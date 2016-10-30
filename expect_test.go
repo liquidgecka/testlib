@@ -38,6 +38,24 @@ func TestT_ExpectError(t *testing.T) {
 	}
 }
 
+func TestT_ExpectErrorf(t *testing.T) {
+	t.Parallel()
+	m, T := testSetup()
+
+	// Capture the error message.
+	msg := ""
+	m.funcFatal = func(args ...interface{}) {
+		msg = fmt.Sprint(args...)
+	}
+	m.CheckPass(t, func() { T.ExpectErrorf(fmt.Errorf("EXPECTED"), "foo %d", 2) })
+	m.CheckFail(t, func() { T.ExpectErrorf(nil, "foo %d", 3) })
+	if msg == "" {
+		t.Fatalf("No error message was reported.")
+	} else if !strings.HasPrefix(msg, "foo 3: ") {
+		t.Fatalf("The prefix was not prepended to the message: '''%s'''", msg)
+	}
+}
+
 func TestT_ExpectSuccess(t *testing.T) {
 	t.Parallel()
 	m, T := testSetup()
@@ -52,6 +70,24 @@ func TestT_ExpectSuccess(t *testing.T) {
 	if msg == "" {
 		t.Fatalf("No error message was reported.")
 	} else if !strings.HasPrefix(msg, "prefix: ") {
+		t.Fatalf("The prefix was not prepended to the message: '''%s'''", msg)
+	}
+}
+
+func TestT_ExpectSuccessf(t *testing.T) {
+	t.Parallel()
+	m, T := testSetup()
+
+	// Capture the error message.
+	msg := ""
+	m.funcFatal = func(args ...interface{}) {
+		msg = fmt.Sprint(args...)
+	}
+	m.CheckPass(t, func() { T.ExpectSuccessf(nil, "foo %d", 4) })
+	m.CheckFail(t, func() { T.ExpectSuccessf(fmt.Errorf("ERROR"), "foo %d", 5) })
+	if msg == "" {
+		t.Fatalf("No error message was reported.")
+	} else if !strings.HasPrefix(msg, "foo 5: ") {
 		t.Fatalf("The prefix was not prepended to the message: '''%s'''", msg)
 	}
 }

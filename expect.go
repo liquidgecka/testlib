@@ -15,6 +15,7 @@
 package testlib
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -30,7 +31,17 @@ func (t *T) ExpectError(err error, desc ...string) {
 	if len(desc) > 0 {
 		prefix = strings.Join(desc, " ") + ": "
 	}
-	t.Fatalf("%sExpected error was not returned.", prefix)
+	t.Fatalf("%sError not returned when one was expected.", prefix)
+}
+
+// ExpectErrorf checks if the given error object is non-nil and if it is
+// not then it will Fatalf the test with a message formed by *f formatting.
+func (t *T) ExpectErrorf(err error, spec string, args ...interface{}) {
+	if err != nil {
+		return
+	}
+	prefix := fmt.Sprintf(spec, args...) + ": "
+	t.Fatalf("%sError not returned when one was expected.", prefix)
 }
 
 // Checks to see that the given error object is nil. This is handy for
@@ -43,6 +54,17 @@ func (t *T) ExpectSuccess(err error, desc ...string) {
 	if len(desc) > 0 {
 		prefix = strings.Join(desc, " ") + ": "
 	}
+	t.Fatalf("%sUnexpected error encountered: %#v (%s)",
+		prefix, err, err.Error())
+}
+
+// ExpectSuccessf checks that the given error object is nil. If non-nil
+// then report as a test failure.
+func (t *T) ExpectSuccessf(err error, spec string, args ...interface{}) {
+	if err == nil {
+		return
+	}
+	prefix := fmt.Sprintf(spec, args...) + ": "
 	t.Fatalf("%sUnexpected error encountered: %#v (%s)",
 		prefix, err, err.Error())
 }
