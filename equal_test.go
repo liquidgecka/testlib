@@ -175,6 +175,11 @@ func TestT_EqualAndNotEqual(t *testing.T) {
 			[]interface{}{"", d1, d2, d3})
 	}
 
+	// Unicode strings + Regressions
+	runTest(
+		[]interface{}{"└"},
+		[]interface{}{"╰"})
+
 	// Boolean (no need to test with 100 values.)
 	runTest(
 		[]interface{}{true},
