@@ -317,18 +317,24 @@ func (t *T) deepEqual(
 		// and assert to a string will panic.
 		hstr := have.String()
 		wstr := want.String()
-		if len(hstr) != len(wstr) {
+		if hstr == wstr {
+			// Cheap equality test passed, no need to continue.
+			break
+		}
+		hrunes := []rune(hstr)
+		wrunes := []rune(wstr)
+		if len(hrunes) != len(wrunes) {
 			return []string{
 				fmt.Sprintf("%s: len(have) %d != len(want) %d.",
-					desc, len(hstr), len(wstr)),
+					desc, len(hrunes), len(wrunes)),
 				fmt.Sprintf("  have: %#v", hstr),
 				fmt.Sprintf("  want: %#v", wstr),
 			}
 		}
-		for i := range hstr {
-			if hstr[i] != wstr[i] {
+		for i, r := range hrunes {
+			if r != wrunes[i] {
 				return []string{
-					fmt.Sprintf("%s: difference at index %d.", desc, i),
+					fmt.Sprintf("%s: difference at rune %d.", desc, i),
 					fmt.Sprintf("  have: %#v", hstr),
 					fmt.Sprintf("  want: %#v", wstr),
 				}
@@ -446,6 +452,5 @@ func (t *T) deepEqual(
 		}
 	}
 
-	// This shouldn't ever be reached.
 	return diffs
 }
