@@ -206,13 +206,21 @@ func (t *T) deepEqual(
 	checkNil := func() bool {
 		if want.IsNil() && !have.IsNil() {
 			diffs = append(diffs, fmt.Sprintf("%s: not equal.", desc))
-			diffs = append(diffs, fmt.Sprintf("  have: %#v", have.Interface()))
+			if have.CanInterface() {
+				diffs = append(diffs, fmt.Sprintf("  have: %#v", have.Interface()))
+			} else {
+				diffs = append(diffs, "  have <unexported field>")
+			}
 			diffs = append(diffs, "  want: nil")
 			return true
 		} else if !want.IsNil() && have.IsNil() {
 			diffs = append(diffs, fmt.Sprintf("%s: not equal.", desc))
 			diffs = append(diffs, "  have: nil")
-			diffs = append(diffs, fmt.Sprintf("  want: %#v", want.Interface()))
+			if want.CanInterface() {
+				diffs = append(diffs, fmt.Sprintf("  want: %#v", want.Interface()))
+			} else {
+				diffs = append(diffs, "  want <unexported field>")
+			}
 			return true
 		}
 		return false
