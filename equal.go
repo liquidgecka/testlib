@@ -147,6 +147,18 @@ func (t *T) isNil(obj interface{}) bool {
 	return v.IsNil()
 }
 
+// Returns a string representation of a Value that is sanitized based on what
+// we are allowed to see. Private fields can not be exposed via a call to
+// Interface() and trying will cause a panic, so we must use String()
+// in that case.
+func stringValue(v reflect.Value) string {
+	if v.CanInterface() {
+		return fmt.Sprintf("%#v", v.Interface())
+	} else {
+		return v.String()
+	}
+}
+
 // Deep comparison. This is based on golang 1.2's reflect.Equal functionality.
 func (t *T) deepEqual(
 	desc string, have, want reflect.Value, ignores []string,
@@ -206,13 +218,13 @@ func (t *T) deepEqual(
 	checkNil := func() bool {
 		if want.IsNil() && !have.IsNil() {
 			diffs = append(diffs, fmt.Sprintf("%s: not equal.", desc))
-			diffs = append(diffs, fmt.Sprintf("  have: %#v", have.Interface()))
+			diffs = append(diffs, fmt.Sprintf("  have: %s", stringValue(have)))
 			diffs = append(diffs, "  want: nil")
 			return true
 		} else if !want.IsNil() && have.IsNil() {
 			diffs = append(diffs, fmt.Sprintf("%s: not equal.", desc))
 			diffs = append(diffs, "  have: nil")
-			diffs = append(diffs, fmt.Sprintf("  want: %#v", want.Interface()))
+			diffs = append(diffs, fmt.Sprintf("  want: %s", stringValue(want)))
 			return true
 		}
 		return false
@@ -224,8 +236,8 @@ func (t *T) deepEqual(
 			diffs = append(diffs, fmt.Sprintf(
 				"%s: (len(have): %d, len(want): %d)",
 				desc, have.Len(), want.Len()))
-			diffs = append(diffs, fmt.Sprintf("  have: %#v", have.Interface()))
-			diffs = append(diffs, fmt.Sprintf("  want: %#v", want.Interface()))
+			diffs = append(diffs, fmt.Sprintf("  have: %s", stringValue(have)))
+			diffs = append(diffs, fmt.Sprintf("  want: %s", stringValue(want)))
 			return true
 		}
 		return false
