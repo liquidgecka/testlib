@@ -15,6 +15,7 @@
 package testlib
 
 import (
+	"bytes"
 	"fmt"
 	"math/rand"
 	"os"
@@ -258,6 +259,15 @@ func TestT_EqualAndNotEqual(t *testing.T) {
 	runTest(
 		[]interface{}{sCust1, sCust2},
 		[]interface{}{dCust1})
+
+	// Structures with private, unexported fields.
+	sBuff1 := bytes.NewBuffer([]byte{1, 2, 3})
+	sBuff2 := bytes.NewBuffer([]byte{1, 2, 3})
+	dBuff1 := bytes.NewBuffer([]byte{1, 2, 3, 4})
+	dBuff2 := bytes.NewBuffer([]byte{1})
+	runTest(
+		[]interface{}{sBuff1, sBuff2},
+		[]interface{}{dBuff1, dBuff2})
 
 	// Structures in a slice.
 	sCustSlice1 := []testEqualCustomStruct{sCust1, sCust2}
