@@ -149,3 +149,17 @@ func TestT_ExpectErrorMessagef(t *testing.T) {
 		T.ExpectErrorMessage(fmt.Errorf("XXX"), "XXX")
 	})
 }
+
+func TestT_ExpectErrorPanic(t *testing.T) {
+	t.Parallel()
+	m, T := testSetup()
+
+	m.CheckPass(t, func() {
+		T.ExpectPanic(func() {
+			panic("EXPECTED")
+		}, "EXPECTED", "prefix: ")
+	})
+	m.CheckFail(t, func() {
+		T.ExpectPanic(func() {}, "UNEXPECTED")
+	})
+}

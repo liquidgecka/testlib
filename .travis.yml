@@ -16,6 +16,8 @@ matrix:
     - go: 1.5
     - go: 1.6
     - go: 1.7
+    - go: 1.8
+    - go: 1.9
       env: FMT_AND_VET=1
     - go: tip
 
@@ -34,4 +36,4 @@ script:
   - test "$FMT_AND_VET" != 1 || go test -v -race .
 
 after_script:
- - test "$FMT_AND_VET" != 1 || $HOME/gopath/bin/goveralls -coverprofile=/tmp/coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
+ - test "$FMT_AND_VET" != 1 || $HOME/gopath/bin/goveralls -coverprofile=/tmp/coverage.out -service=travis-ci -repotoken=$COVERALLS_TOKEN
