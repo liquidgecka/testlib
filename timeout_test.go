@@ -74,7 +74,7 @@ func TestT_TryUntilYield(t *testing.T) {
 	l := sync.Mutex{}
 	unlocked := false
 	go func() {
-		time.Sleep(time.Second / 200)
+		time.Sleep(time.Second / 100)
 		l.Lock()
 		unlocked = true
 		l.Unlock()
@@ -82,9 +82,10 @@ func TestT_TryUntilYield(t *testing.T) {
 	getUnlocked := func() bool {
 		l.Lock()
 		defer l.Unlock()
+		time.Sleep(time.Millisecond)
 		return unlocked
 	}
 	m.CheckPass(t, func() {
-		T.TryUntil(getUnlocked, time.Second/50)
+		T.TryUntil(getUnlocked, time.Second)
 	})
 }

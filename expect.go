@@ -94,3 +94,20 @@ func (t *T) ExpectErrorMessagef(err error, msg string, spec string, args ...inte
 			"Error message=%s\nExpected string=%s", prefix, err.Error(), msg)
 	}
 }
+
+// Expects the function passed in to panic. This will call f() and expect
+// that an error matching err will be raised as a panic.
+func (t *T) ExpectPanic(f func(), err interface{}, desc ...string) {
+	prefix := ""
+	if len(desc) > 0 {
+		prefix = strings.Join(desc, " ") + ": "
+	}
+	defer func() {
+		i := recover()
+		if i == nil {
+			t.Fatalf("%sFunction call did not panic as expected.", prefix)
+		}
+		t.Equal(i, err, "Raised value is not correct")
+	}()
+	f()
+}
