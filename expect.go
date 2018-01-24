@@ -96,8 +96,10 @@ func (t *T) ExpectErrorMessagef(err error, msg string, spec string, args ...inte
 }
 
 // Expects the function passed in to panic. This will call f() and expect
-// that an error matching err will be raised as a panic.
-func (t *T) ExpectPanic(f func(), err interface{}, desc ...string) {
+// that an interface{} instance will be raised matching iface. This will
+// typically be a string, or an error interface and will be compared using
+// the Equal() method.
+func (t *T) ExpectPanic(f func(), iface interface{}, desc ...string) {
 	prefix := ""
 	if len(desc) > 0 {
 		prefix = strings.Join(desc, " ") + ": "
@@ -107,7 +109,7 @@ func (t *T) ExpectPanic(f func(), err interface{}, desc ...string) {
 		if i == nil {
 			t.Fatalf("%sFunction call did not panic as expected.", prefix)
 		}
-		t.Equal(i, err, "Raised value is not correct")
+		t.Equal(i, iface, "Raised value is not correct")
 	}()
 	f()
 }
