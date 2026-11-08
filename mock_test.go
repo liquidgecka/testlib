@@ -177,6 +177,14 @@ func (m *mockT) Skipped() bool {
 	return m.skipped
 }
 
+func (m *mockT) Helper() {}
+
+func (m *mockT) Cleanup(f func()) {}
+
+func (m *mockT) Name() string {
+	return "mockTest"
+}
+
 func (m *mockT) private() {}
 
 // Simple initializer.

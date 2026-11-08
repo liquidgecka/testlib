@@ -163,3 +163,39 @@ func TestT_ExpectErrorPanic(t *testing.T) {
 		T.ExpectPanic(func() {}, "UNEXPECTED")
 	})
 }
+
+func TestT_ExpectPanicf(t *testing.T) {
+	t.Parallel()
+	m, T := testSetup()
+
+	// ExpectPanic with matching panic
+	m.CheckPass(t, func() {
+		T.ExpectPanic(func() { panic("boom") }, "boom", "my prefix")
+	})
+
+	// ExpectPanicf
+	m.CheckPass(t, func() {
+		T.ExpectPanicf(func() { panic(42) }, 42, "panic test %d", 1)
+	})
+
+	// ExpectPanic with wrong panic value should fail and preserve prefix
+	msg := ""
+	m.funcFatal = func(args ...interface{}) {
+		msg = fmt.Sprint(args...)
+	}
+	m.CheckFail(t, func() {
+		T.ExpectPanic(func() { panic("wrong") }, "expected", "prefix_check")
+	})
+	if !strings.Contains(msg, "prefix_check: ") {
+		t.Fatalf("ExpectPanic did not include prefix in mismatch error: %s", msg)
+	}
+
+	// ExpectPanicf with wrong value
+	msg = ""
+	m.CheckFail(t, func() {
+		T.ExpectPanicf(func() { panic("wrong") }, "expected", "formatted %s", "prefix")
+	})
+	if !strings.Contains(msg, "formatted prefix: ") {
+		t.Fatalf("ExpectPanicf did not include formatted prefix: %s", msg)
+	}
+}

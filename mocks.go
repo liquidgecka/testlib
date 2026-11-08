@@ -17,13 +17,14 @@ package testlib
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 )
 
 var fmtFprintf func(io.Writer, string, ...interface{}) (int, error) = fmt.Fprintf
-var ioutilTempDir func(string, string) (string, error) = ioutil.TempDir
-var ioutilTempFile func(string, string) (*os.File, error) = ioutil.TempFile
+var osMkdirTemp func(string, string) (string, error) = os.MkdirTemp
+var osCreateTemp func(string, string) (*os.File, error) = os.CreateTemp
+var ioutilTempDir func(string, string) (string, error) = os.MkdirTemp
+var ioutilTempFile func(string, string) (*os.File, error) = os.CreateTemp
 var osChmod func(string, os.FileMode) error = os.Chmod
 var osExit func(int) = os.Exit
 var osRemoveAll func(string) error = os.RemoveAll

@@ -27,12 +27,14 @@ import (
 // deep inspect both values to ensure that the full structure tree is equal.
 // It also walks through pointers ensuring that everything is equal.
 func (t *T) Equal(have, want interface{}, desc ...string) {
+	t.Helper()
 	t.EqualWithIgnores(have, want, nil, desc...)
 }
 
 // Equalf is the same as Equal but uses Printf style formatting to construct
 // the description message.
 func (t *T) Equalf(have, want interface{}, spec string, args ...interface{}) {
+	t.Helper()
 	t.EqualWithIgnoresf(have, want, nil, spec, args...)
 }
 
@@ -43,6 +45,7 @@ func (t *T) Equalf(have, want interface{}, spec string, args ...interface{}) {
 func (t *T) EqualWithIgnores(
 	have, want interface{}, ignores []string, desc ...string,
 ) {
+	t.Helper()
 	prefix := ""
 	if len(desc) > 0 {
 		prefix = strings.Join(desc, " ") + ": "
@@ -55,6 +58,7 @@ func (t *T) EqualWithIgnores(
 func (t *T) EqualWithIgnoresf(
 	have, want interface{}, ignores []string, spec string, args ...interface{},
 ) {
+	t.Helper()
 	prefix := fmt.Sprintf(spec, args...) + ": "
 	t.equalWithIgnoresPrefix_(have, want, ignores, prefix)
 }
@@ -62,6 +66,7 @@ func (t *T) EqualWithIgnoresf(
 func (t *T) equalWithIgnoresPrefix_(
 	have, want interface{}, ignores []string, prefix string,
 ) {
+	t.Helper()
 	// Check to see if either value is nil and then verify that the are
 	// either both nil, or fail if one is nil.
 	haveNil := t.isNil(have)
@@ -87,6 +92,7 @@ func (t *T) equalWithIgnoresPrefix_(
 // Like Equal() except that it asserts that the two values are not equal
 // to each other.
 func (t *T) NotEqual(have, unwanted interface{}, desc ...string) {
+	t.Helper()
 	prefix := ""
 	if len(desc) > 0 {
 		prefix = strings.Join(desc, " ") + ": "
@@ -96,11 +102,13 @@ func (t *T) NotEqual(have, unwanted interface{}, desc ...string) {
 
 // NotEqualf is NotEqual using Printf style format strings.
 func (t *T) NotEqualf(have, unwanted interface{}, spec string, args ...interface{}) {
+	t.Helper()
 	prefix := fmt.Sprintf(spec, args...) + ": "
 	t.notEqualPrefix_(have, unwanted, prefix)
 }
 
 func (t *T) notEqualPrefix_(have, unwanted interface{}, prefix string) {
+	t.Helper()
 	// Check to see if either value is nil and then verify that the are
 	// either both nil, or fail if one is nil.
 	haveNil := t.isNil(have)
@@ -136,15 +144,11 @@ func (t *T) isNil(obj interface{}) bool {
 	}
 	v := reflect.ValueOf(obj)
 	switch v.Kind() {
-	case reflect.Chan:
-	case reflect.Func:
-	case reflect.Map:
-	case reflect.Ptr:
-	case reflect.Slice:
+	case reflect.Chan, reflect.Func, reflect.Map, reflect.Ptr, reflect.Slice, reflect.UnsafePointer:
+		return v.IsNil()
 	default:
 		return false
 	}
-	return v.IsNil()
 }
 
 // Returns a string representation of a Value that is sanitized based on what
@@ -152,14 +156,16 @@ func (t *T) isNil(obj interface{}) bool {
 // Interface() and trying will cause a panic, so we must use String()
 // in that case.
 func stringValue(v reflect.Value) string {
+	if !v.IsValid() {
+		return "<invalid reflect.Value>"
+	}
 	if v.CanInterface() {
 		return fmt.Sprintf("%#v", v.Interface())
-	} else {
-		return v.String()
 	}
+	return v.String()
 }
 
-// Deep comparison. This is based on golang 1.2's reflect.Equal functionality.
+// Deep comparison. This is based on golang's reflect.DeepEqual functionality.
 func (t *T) deepEqual(
 	desc string, have, want reflect.Value, ignores []string,
 	visited map[uintptr]*visitedNode,
@@ -172,19 +178,29 @@ func (t *T) deepEqual(
 	if !want.IsValid() && !have.IsValid() {
 		return nil
 	} else if !want.IsValid() && have.IsValid() {
-		// This is rare, not sure how to document this better.
+		prefix := ""
+		if desc != "" {
+			prefix = desc + ": "
+		}
 		return []string{
-			fmt.Sprintf("%s: have invalid or nil object.", desc),
+			fmt.Sprintf("%swanted an invalid or nil object, have valid object.", prefix),
 		}
 	} else if want.IsValid() && !have.IsValid() {
-		// This is rare, not sure how to document this better.
+		prefix := ""
+		if desc != "" {
+			prefix = desc + ": "
+		}
 		return []string{
-			fmt.Sprintf("%s: wanted a valid, non nil object.", desc),
+			fmt.Sprintf("%swanted a valid, non nil object, have invalid or nil object.", prefix),
 		}
 	} else if want.Type() != have.Type() {
+		prefix := ""
+		if desc != "" {
+			prefix = desc + ": "
+		}
 		return []string{fmt.Sprintf(
-			"%s: Not the same type have: '%s', want: '%s'",
-			desc, have.Type(), want.Type())}
+			"%sNot the same type have: '%s', want: '%s'",
+			prefix, have.Type(), want.Type())}
 	}
 
 	if want.CanAddr() && have.CanAddr() {
@@ -216,13 +232,17 @@ func (t *T) deepEqual(
 
 	// Checks to see if one value is nil, while the other is not.
 	checkNil := func() bool {
+		prefix := ""
+		if desc != "" {
+			prefix = desc + ": "
+		}
 		if want.IsNil() && !have.IsNil() {
-			diffs = append(diffs, fmt.Sprintf("%s: not equal.", desc))
+			diffs = append(diffs, fmt.Sprintf("%snot equal.", prefix))
 			diffs = append(diffs, fmt.Sprintf("  have: %s", stringValue(have)))
 			diffs = append(diffs, "  want: nil")
 			return true
 		} else if !want.IsNil() && have.IsNil() {
-			diffs = append(diffs, fmt.Sprintf("%s: not equal.", desc))
+			diffs = append(diffs, fmt.Sprintf("%snot equal.", prefix))
 			diffs = append(diffs, "  have: nil")
 			diffs = append(diffs, fmt.Sprintf("  want: %s", stringValue(want)))
 			return true
@@ -233,9 +253,13 @@ func (t *T) deepEqual(
 	// Checks to see that the lengths of both objects are equal.
 	checkLen := func() bool {
 		if want.Len() != have.Len() {
+			prefix := ""
+			if desc != "" {
+				prefix = desc + ": "
+			}
 			diffs = append(diffs, fmt.Sprintf(
-				"%s: (len(have): %d, len(want): %d)",
-				desc, have.Len(), want.Len()))
+				"%s(len(have): %d, len(want): %d)",
+				prefix, have.Len(), want.Len()))
 			diffs = append(diffs, fmt.Sprintf("  have: %s", stringValue(have)))
 			diffs = append(diffs, fmt.Sprintf("  want: %s", stringValue(want)))
 			return true
@@ -261,17 +285,34 @@ func (t *T) deepEqual(
 		hcap := have.Cap()
 		wcap := want.Cap()
 		if hcap != wcap {
+			prefix := ""
+			if desc != "" {
+				prefix = desc + ": "
+			}
 			diffs = append(diffs, fmt.Sprintf(
 				"%sCapacities differ:\n  have: %d\n  want: %d",
-				desc, hcap, wcap))
+				prefix, hcap, wcap))
 			return diffs
 		}
 
 	case reflect.Func:
-		// Can't do better than this:
-		checkNil()
+		if have.Pointer() == want.Pointer() {
+			return nil
+		}
+		if !checkNil() {
+			prefix := ""
+			if desc != "" {
+				prefix = desc + ": "
+			}
+			diffs = append(diffs, fmt.Sprintf("%snot equal.", prefix))
+			diffs = append(diffs, fmt.Sprintf("  have: %s", stringValue(have)))
+			diffs = append(diffs, fmt.Sprintf("  want: %s", stringValue(want)))
+		}
 
 	case reflect.Interface:
+		if have.IsNil() && want.IsNil() {
+			return nil
+		}
 		if !checkNil() {
 			newdiffs := t.deepEqual(
 				desc, have.Elem(), want.Elem(), ignores, visited)
@@ -279,39 +320,70 @@ func (t *T) deepEqual(
 		}
 
 	case reflect.Map:
+		if have.Pointer() == want.Pointer() && have.Pointer() != 0 {
+			return nil
+		}
 		if !checkNil() {
 			// Check that the keys are present in both maps.
 			for _, k := range want.MapKeys() {
+				var keyStr string
+				if k.Kind() == reflect.String {
+					keyStr = fmt.Sprintf("[%q]", k.String())
+				} else {
+					keyStr = fmt.Sprintf("[%v]", k.Interface())
+				}
+				keyDesc := keyStr
+				if desc != "" {
+					keyDesc = desc + keyStr
+				}
+
 				if !have.MapIndex(k).IsValid() {
-					// Add the error.
+					prefix := ""
+					if desc != "" {
+						prefix = desc + ": "
+					}
 					diffs = append(diffs, fmt.Sprintf(
-						"%sExpected key [%q] is missing.", desc, k))
+						"%sExpected key %s is missing.", prefix, keyStr))
 					diffs = append(diffs, "  have: not present")
-					diffs = append(diffs, fmt.Sprintf("  want: %#v",
-						want.MapIndex(k)))
+					diffs = append(diffs, fmt.Sprintf("  want: %s",
+						stringValue(want.MapIndex(k))))
 					continue
 				}
 				newdiffs := t.deepEqual(
-					fmt.Sprintf("%s[%q] ", desc, k),
+					keyDesc,
 					have.MapIndex(k), want.MapIndex(k), ignores, visited)
 				diffs = append(diffs, newdiffs...)
 			}
 			for _, k := range have.MapKeys() {
 				if !want.MapIndex(k).IsValid() {
-					// Add the error.
+					var keyStr string
+					if k.Kind() == reflect.String {
+						keyStr = fmt.Sprintf("[%q]", k.String())
+					} else {
+						keyStr = fmt.Sprintf("[%v]", k.Interface())
+					}
+					prefix := ""
+					if desc != "" {
+						prefix = desc + ": "
+					}
 					diffs = append(diffs, fmt.Sprintf(
-						"%sUnexpected key [%q].", desc, k))
+						"%sUnexpected key %s.", prefix, keyStr))
 					diffs = append(diffs,
-						fmt.Sprintf("  have: %#v", have.MapIndex(k)))
+						fmt.Sprintf("  have: %s", stringValue(have.MapIndex(k))))
 					diffs = append(diffs, "  want: not present")
 				}
 			}
 		}
 
 	case reflect.Ptr:
-		newdiffs := t.deepEqual(
-			desc, have.Elem(), want.Elem(), ignores, visited)
-		diffs = append(diffs, newdiffs...)
+		if have.Pointer() == want.Pointer() {
+			return nil
+		}
+		if !checkNil() {
+			newdiffs := t.deepEqual(
+				desc, have.Elem(), want.Elem(), ignores, visited)
+			diffs = append(diffs, newdiffs...)
+		}
 
 	case reflect.Slice:
 		if !checkNil() && !checkLen() {
@@ -336,17 +408,25 @@ func (t *T) deepEqual(
 		hrunes := []rune(hstr)
 		wrunes := []rune(wstr)
 		if len(hrunes) != len(wrunes) {
+			prefix := ""
+			if desc != "" {
+				prefix = desc + ": "
+			}
 			return []string{
-				fmt.Sprintf("%s: len(have) %d != len(want) %d.",
-					desc, len(hrunes), len(wrunes)),
+				fmt.Sprintf("%slen(have) %d != len(want) %d.",
+					prefix, len(hrunes), len(wrunes)),
 				fmt.Sprintf("  have: %#v", hstr),
 				fmt.Sprintf("  want: %#v", wstr),
 			}
 		}
 		for i, r := range hrunes {
 			if r != wrunes[i] {
+				prefix := ""
+				if desc != "" {
+					prefix = desc + ": "
+				}
 				return []string{
-					fmt.Sprintf("%s: difference at rune %d.", desc, i),
+					fmt.Sprintf("%sdifference at rune %d.", prefix, i),
 					fmt.Sprintf("  have: %#v", hstr),
 					fmt.Sprintf("  want: %#v", wstr),
 				}
@@ -377,8 +457,12 @@ func (t *T) deepEqual(
 		havePtr := have.Uint()
 		wantPtr := want.Uint()
 		if havePtr != wantPtr {
+			prefix := ""
+			if desc != "" {
+				prefix = desc + ": "
+			}
 			return []string{
-				fmt.Sprintf("%s: not equal.", desc),
+				fmt.Sprintf("%snot equal.", prefix),
 				fmt.Sprintf("  have: %#v", havePtr),
 				fmt.Sprintf("  want: %#v", wantPtr),
 			}
@@ -391,8 +475,12 @@ func (t *T) deepEqual(
 		havePtr := have.Pointer()
 		wantPtr := want.Pointer()
 		if havePtr != wantPtr {
+			prefix := ""
+			if desc != "" {
+				prefix = desc + ": "
+			}
 			return []string{
-				fmt.Sprintf("%s: not equal.", desc),
+				fmt.Sprintf("%snot equal.", prefix),
 				fmt.Sprintf("  have: %#v", havePtr),
 				fmt.Sprintf("  want: %#v", wantPtr),
 			}
@@ -402,64 +490,78 @@ func (t *T) deepEqual(
 		haveBool := have.Bool()
 		wantBool := want.Bool()
 		if haveBool != wantBool {
+			prefix := ""
+			if desc != "" {
+				prefix = desc + ": "
+			}
 			return []string{
-				fmt.Sprintf("%s: not equal.", desc),
+				fmt.Sprintf("%snot equal.", prefix),
 				fmt.Sprintf("  have: bool(%t)", haveBool),
 				fmt.Sprintf("  want: bool(%t)", wantBool),
 			}
 		}
 
-	case reflect.Int:
-		fallthrough
-	case reflect.Int8:
-		fallthrough
-	case reflect.Int16:
-		fallthrough
-	case reflect.Int32:
-		fallthrough
-	case reflect.Int64:
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		// Basic integer types.
 		haveInt := have.Int()
 		wantInt := want.Int()
 		if haveInt != wantInt {
+			prefix := ""
+			if desc != "" {
+				prefix = desc + ": "
+			}
 			return []string{
-				fmt.Sprintf("%s: not equal", desc),
+				fmt.Sprintf("%snot equal", prefix),
 				fmt.Sprintf("  have: %s(%d)", have.Type(), haveInt),
 				fmt.Sprintf("  want: %s(%d)", want.Type(), wantInt),
 			}
 		}
 
-	case reflect.Uint:
-		fallthrough
-	case reflect.Uint8:
-		fallthrough
-	case reflect.Uint16:
-		fallthrough
-	case reflect.Uint32:
-		fallthrough
-	case reflect.Uint64:
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		// Basic unsigned integer types.
 		haveUint := have.Uint()
 		wantUint := want.Uint()
 		if haveUint != wantUint {
+			prefix := ""
+			if desc != "" {
+				prefix = desc + ": "
+			}
 			return []string{
-				fmt.Sprintf("%s: not equal", desc),
+				fmt.Sprintf("%snot equal", prefix),
 				fmt.Sprintf("  have: %s(%d)", have.Type(), haveUint),
 				fmt.Sprintf("  want: %s(%d)", want.Type(), wantUint),
 			}
 		}
 
-	case reflect.Float32:
-		fallthrough
-	case reflect.Float64:
+	case reflect.Float32, reflect.Float64:
 		// Float types.
 		haveFloat := have.Float()
 		wantFloat := want.Float()
 		if haveFloat != wantFloat {
+			prefix := ""
+			if desc != "" {
+				prefix = desc + ": "
+			}
 			return []string{
-				fmt.Sprintf("%s: not equal", desc),
+				fmt.Sprintf("%snot equal", prefix),
 				fmt.Sprintf("  have: %s(%f)", have.Type(), haveFloat),
 				fmt.Sprintf("  want: %s(%f)", want.Type(), wantFloat),
+			}
+		}
+
+	case reflect.Complex64, reflect.Complex128:
+		// Complex types.
+		haveComplex := have.Complex()
+		wantComplex := want.Complex()
+		if haveComplex != wantComplex {
+			prefix := ""
+			if desc != "" {
+				prefix = desc + ": "
+			}
+			return []string{
+				fmt.Sprintf("%snot equal", prefix),
+				fmt.Sprintf("  have: %s(%v)", have.Type(), haveComplex),
+				fmt.Sprintf("  want: %s(%v)", want.Type(), wantComplex),
 			}
 		}
 	}

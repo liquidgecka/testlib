@@ -24,6 +24,7 @@ import (
 // This call will check that the given error object is non nil and if it is
 // not it will automatically Fatalf the test with a message.
 func (t *T) ExpectError(err error, desc ...string) {
+	t.Helper()
 	if err != nil {
 		return
 	}
@@ -37,6 +38,7 @@ func (t *T) ExpectError(err error, desc ...string) {
 // ExpectErrorf checks if the given error object is non-nil and if it is
 // not then it will Fatalf the test with a message formed by *f formatting.
 func (t *T) ExpectErrorf(err error, spec string, args ...interface{}) {
+	t.Helper()
 	if err != nil {
 		return
 	}
@@ -47,6 +49,7 @@ func (t *T) ExpectErrorf(err error, spec string, args ...interface{}) {
 // Checks to see that the given error object is nil. This is handy for
 // performing quick checks on calls that are expected to work.
 func (t *T) ExpectSuccess(err error, desc ...string) {
+	t.Helper()
 	if err == nil {
 		return
 	}
@@ -61,6 +64,7 @@ func (t *T) ExpectSuccess(err error, desc ...string) {
 // ExpectSuccessf checks that the given error object is nil. If non-nil
 // then report as a test failure.
 func (t *T) ExpectSuccessf(err error, spec string, args ...interface{}) {
+	t.Helper()
 	if err == nil {
 		return
 	}
@@ -71,6 +75,7 @@ func (t *T) ExpectSuccessf(err error, spec string, args ...interface{}) {
 
 // Fails if the error message does not contain the given string.
 func (t *T) ExpectErrorMessage(err error, msg string, desc ...string) {
+	t.Helper()
 	prefix := ""
 	if len(desc) > 0 {
 		prefix = strings.Join(desc, " ") + ": "
@@ -86,6 +91,7 @@ func (t *T) ExpectErrorMessage(err error, msg string, desc ...string) {
 // ExpectErrorMessagef fails if the error message does not contain the
 // given string; message formatted per Printf.
 func (t *T) ExpectErrorMessagef(err error, msg string, spec string, args ...interface{}) {
+	t.Helper()
 	prefix := fmt.Sprintf(spec, args...) + ": "
 	if err == nil {
 		t.Fatalf("%sExpected error was not returned.", prefix)
@@ -98,6 +104,7 @@ func (t *T) ExpectErrorMessagef(err error, msg string, spec string, args ...inte
 // Expects the function passed in to panic. This will call f() and expect
 // that an error matching err will be raised as a panic.
 func (t *T) ExpectPanic(f func(), err interface{}, desc ...string) {
+	t.Helper()
 	prefix := ""
 	if len(desc) > 0 {
 		prefix = strings.Join(desc, " ") + ": "
@@ -107,7 +114,22 @@ func (t *T) ExpectPanic(f func(), err interface{}, desc ...string) {
 		if i == nil {
 			t.Fatalf("%sFunction call did not panic as expected.", prefix)
 		}
-		t.Equal(i, err, "Raised value is not correct")
+		t.Equal(i, err, prefix+"Raised value is not correct")
+	}()
+	f()
+}
+
+// ExpectPanicf is the same as ExpectPanic but uses Printf style formatting
+// to construct the description message.
+func (t *T) ExpectPanicf(f func(), err interface{}, spec string, args ...interface{}) {
+	t.Helper()
+	prefix := fmt.Sprintf(spec, args...) + ": "
+	defer func() {
+		i := recover()
+		if i == nil {
+			t.Fatalf("%sFunction call did not panic as expected.", prefix)
+		}
+		t.Equal(i, err, prefix+"Raised value is not correct")
 	}()
 	f()
 }

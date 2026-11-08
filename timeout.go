@@ -30,15 +30,19 @@ import (
 func (t *T) TryUntil(
 	f func() bool, timeout time.Duration, desc ...string,
 ) {
+	t.Helper()
 	prefix := ""
 	if len(desc) > 0 {
 		prefix = strings.Join(desc, " ") + ": "
 	}
 
 	end := time.Now().Add(timeout)
-	for time.Now().Before(end) {
+	for {
 		if f() {
 			return
+		}
+		if !time.Now().Before(end) {
+			break
 		}
 		// Yield the processor so that other goroutines have a chance to work.
 		// This is necessary since the function may not actually sleep at
@@ -54,12 +58,16 @@ func (t *T) TryUntil(
 func (t *T) TryUntilf(
 	f func() bool, timeout time.Duration, spec string, args ...interface{},
 ) {
+	t.Helper()
 	prefix := fmt.Sprintf(spec, args...) + ": "
 
 	end := time.Now().Add(timeout)
-	for time.Now().Before(end) {
+	for {
 		if f() {
 			return
+		}
+		if !time.Now().Before(end) {
+			break
 		}
 		// Yield the processor so that other goroutines have a chance to work.
 		// This is necessary since the function may not actually sleep at

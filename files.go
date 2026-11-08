@@ -16,7 +16,6 @@ package testlib
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -25,6 +24,13 @@ import (
 
 // This file contains functions for dealing with files.
 
+func cleanTempPattern(name string) string {
+	name = strings.ReplaceAll(name, "/", "_")
+	name = strings.ReplaceAll(name, "\\", "_")
+	name = strings.ReplaceAll(name, "*", "_")
+	return name
+}
+
 // Calling this function will create a process specific temporary directory
 // that will be cleaned up when the process terminates. Data in this directory
 // will survive the entire lifetime of the testing process.
@@ -32,6 +38,7 @@ import (
 // Files in this directory are cleaned up by a child process that is forked
 // from the running process so that nothing can stop them from being cleaned.
 func (t *T) RootTempDir() string {
+	t.Helper()
 	testLibRootDirOnce.Do(func() {
 		var err error
 		var reader *os.File
@@ -51,14 +58,14 @@ func (t *T) RootTempDir() string {
 		t.ExpectSuccess(reader.Close())
 	})
 	return testLibRootDir
-
 }
 
 // Creates a temporary directory for this specific test which will be cleaned
 // once the test has finished executing. This calls RootTempDir() to create the
 // base directory.
 func (t *T) TempDirMode(mode os.FileMode) string {
-	f, err := ioutilTempDir(t.RootTempDir(), t.Name())
+	t.Helper()
+	f, err := ioutilTempDir(t.RootTempDir(), cleanTempPattern(t.Name()))
 	t.ExpectSuccess(err)
 	t.NotEqual(f, "")
 	t.ExpectSuccess(osChmod(f, mode))
@@ -70,18 +77,21 @@ func (t *T) TempDirMode(mode os.FileMode) string {
 
 // Like TempDirMode except this sets the default mode to 0755.
 func (t *T) TempDir() string {
+	t.Helper()
 	return t.TempDirMode(os.FileMode(0755))
 }
 
 // Creates a temporary file in a temporary directory with a specific mode
 // set on it. This will return the file descriptor of the open file.
 func (t *T) TempFileMode(mode os.FileMode) *os.File {
-	f, err := ioutilTempFile(t.RootTempDir(), t.Name())
+	t.Helper()
+	f, err := ioutilTempFile(t.RootTempDir(), cleanTempPattern(t.Name()))
 	t.ExpectSuccess(err)
 	t.NotEqual(f, nil)
 	t.ExpectSuccess(osChmod(f.Name(), mode))
 	name := f.Name()
 	t.AddFinalizer(func() {
+		f.Close()
 		osRemove(name)
 	})
 	return f
@@ -89,12 +99,14 @@ func (t *T) TempFileMode(mode os.FileMode) *os.File {
 
 // Like TempFileMode except that it uses a default mode of 0644.
 func (t *T) TempFile() *os.File {
+	t.Helper()
 	return t.TempFileMode(os.FileMode(0644))
 }
 
 // Makes a temporary file with the given string as contents. This returns
 // the name of the created file.
 func (t *T) WriteTempFileMode(contents string, mode os.FileMode) string {
+	t.Helper()
 	f := t.TempFileMode(mode)
 	name := f.Name()
 	_, err := io.WriteString(f, contents)
@@ -105,6 +117,7 @@ func (t *T) WriteTempFileMode(contents string, mode os.FileMode) string {
 
 // Like WriteTempFileMode except this uses the default temp file mode.
 func (t *T) WriteTempFile(contents string) string {
+	t.Helper()
 	return t.WriteTempFileMode(contents, 0644)
 }
 
@@ -139,7 +152,7 @@ func initRootTempDir(args []string, reader io.Reader) {
 
 	// The parent process holds our stdin open until it dies, once that happens
 	// we need to remove the directory.
-	if _, err := ioutil.ReadAll(reader); err != nil {
+	if _, err := io.ReadAll(reader); err != nil {
 		fmtFprintf(
 			os.Stderr, "Error cleaning up directory %s: %s\n",
 			args[2], err)

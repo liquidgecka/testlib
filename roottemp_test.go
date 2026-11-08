@@ -137,7 +137,7 @@ func TestRootTempDir(t *testing.T) {
 	}
 
 	// Run each test in the map.
-	for name, _ := range rootTempDirExitModes {
+	for name := range rootTempDirExitModes {
 		runTest(name)
 	}
 
@@ -145,7 +145,7 @@ func TestRootTempDir(t *testing.T) {
 	NewT(t).RootTempDir()
 }
 
-func TestRoomTempDirInit(t *testing.T) {
+func TestRootTempDirInit(t *testing.T) {
 	// Ensure that the defaults get set again once this test finishes.
 	defer func() {
 		fmtFprintf = fmt.Fprintf
@@ -213,4 +213,8 @@ func TestRoomTempDirInit(t *testing.T) {
 		t.Fatalf("initRootTempDir should have exited with code 0.")
 	}
 
+}
+
+func TestRoomTempDirInit(t *testing.T) {
+	TestRootTempDirInit(t)
 }

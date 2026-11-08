@@ -16,6 +16,7 @@ package testlib
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -264,4 +265,57 @@ func TestT_Skipped(t *testing.T) {
 	if !T.Skipped() {
 		t.Fatalf("Skipped() returned false when it shouldn't have.")
 	}
+}
+
+func TestT_Fail(t *testing.T) {
+	t.Parallel()
+	m, T := testSetup()
+
+	if T.Failed() {
+		t.Fatalf("T.Failed() returned true initially")
+	}
+	T.Fail()
+	if !m.failed || !T.Failed() {
+		t.Fatalf("T.Fail() did not mark test as failed")
+	}
+}
+
+func TestT_Cleanup(t *testing.T) {
+	t.Parallel()
+	T := NewT(new(mockT))
+
+	cleaned := false
+	T.Cleanup(func() {
+		cleaned = true
+	})
+	T.Finish()
+	if !cleaned {
+		t.Fatalf("T.Cleanup() was not called on Finish()")
+	}
+
+	// Calling Finish() a second time must be a safe no-op
+	T.Finish()
+}
+
+func TestT_Setenv(t *testing.T) {
+	m, _ := testSetup()
+	_ = m
+
+	tReal := NewT(t)
+	key := "TESTLIB_TEST_ENV_VAR"
+	origVal := os.Getenv(key)
+	tReal.Setenv(key, "my_test_val")
+	if os.Getenv(key) != "my_test_val" {
+		t.Fatalf("Setenv did not set value")
+	}
+	tReal.Finish()
+	if os.Getenv(key) != origVal {
+		t.Fatalf("Setenv cleanup did not restore value")
+	}
+}
+
+func TestT_Helper(t *testing.T) {
+	t.Parallel()
+	_, T := testSetup()
+	T.Helper() // should not panic
 }

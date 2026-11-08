@@ -16,29 +16,28 @@ package testlib
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 )
 
 func TestTempDirMode(t *testing.T) {
-	// Test 1: ioutil.TempDir() failure.
+	// Test 1: os.MkdirTemp() failure.
 	m, T := testSetup()
 	m.CheckFail(t, func() {
 		ioutilTempDir = func(a, b string) (string, error) {
 			return "", fmt.Errorf("Expected")
 		}
-		defer func() { ioutilTempDir = ioutil.TempDir }()
+		defer func() { ioutilTempDir = os.MkdirTemp }()
 		T.TempDirMode(os.FileMode(0644))
 	})
 
-	// Test 2: ioutil.TempDir() returns "".
+	// Test 2: os.MkdirTemp() returns "".
 	m, T = testSetup()
 	m.CheckFail(t, func() {
 		ioutilTempDir = func(a, b string) (string, error) {
 			return "", nil
 		}
-		defer func() { ioutilTempDir = ioutil.TempDir }()
+		defer func() { ioutilTempDir = os.MkdirTemp }()
 		T.TempDirMode(os.FileMode(0644))
 	})
 
@@ -102,23 +101,23 @@ func TestT_TempDir(t *testing.T) {
 }
 
 func TestTempFileMode(t *testing.T) {
-	// Test 1: ioutil.TempFile() failure.
+	// Test 1: os.CreateTemp() failure.
 	m, T := testSetup()
 	m.CheckFail(t, func() {
 		ioutilTempFile = func(a, b string) (*os.File, error) {
 			return nil, fmt.Errorf("Expected")
 		}
-		defer func() { ioutilTempFile = ioutil.TempFile }()
+		defer func() { ioutilTempFile = os.CreateTemp }()
 		T.TempFileMode(os.FileMode(0644))
 	})
 
-	// Test 2: ioutil.TempFile() returns nil.
+	// Test 2: os.CreateTemp() returns nil.
 	m, T = testSetup()
 	m.CheckFail(t, func() {
 		ioutilTempFile = func(a, b string) (*os.File, error) {
 			return nil, nil
 		}
-		defer func() { ioutilTempFile = ioutil.TempFile }()
+		defer func() { ioutilTempFile = os.CreateTemp }()
 		T.TempFileMode(os.FileMode(0644))
 	})
 
@@ -181,7 +180,7 @@ func TestT_TempFile(t *testing.T) {
 	T.Finish()
 }
 
-func TestT_WhiteTempFileMode(t *testing.T) {
+func TestT_WriteTempFileMode(t *testing.T) {
 	m, T := testSetup()
 	var file string
 	m.CheckPass(t, func() {
@@ -193,7 +192,7 @@ func TestT_WhiteTempFileMode(t *testing.T) {
 		t.Fatalf("Error statting returned file %s: %s", file, err)
 	} else if stat.Mode() != os.FileMode(0614) {
 		t.Fatalf("Returned file '%s' has the wrong mode: %x", file, stat.Mode())
-	} else if contents, err := ioutil.ReadFile(file); err != nil {
+	} else if contents, err := os.ReadFile(file); err != nil {
 		t.Fatalf("Error reading %s: %s", file, err)
 	} else if string(contents) != "contents" {
 		t.Fatalf("File contained the wrong contents")
@@ -201,7 +200,11 @@ func TestT_WhiteTempFileMode(t *testing.T) {
 	T.Finish()
 }
 
-func TestT_WhiteTempFile(t *testing.T) {
+func TestT_WhiteTempFileMode(t *testing.T) {
+	TestT_WriteTempFileMode(t)
+}
+
+func TestT_WriteTempFile(t *testing.T) {
 	m, T := testSetup()
 	var file string
 	m.CheckPass(t, func() {
@@ -213,10 +216,42 @@ func TestT_WhiteTempFile(t *testing.T) {
 		t.Fatalf("Error statting returned file %s: %s", file, err)
 	} else if stat.Mode() != os.FileMode(0644) {
 		t.Fatalf("Returned file '%s' has the wrong mode: %x", file, stat.Mode())
-	} else if contents, err := ioutil.ReadFile(file); err != nil {
+	} else if contents, err := os.ReadFile(file); err != nil {
 		t.Fatalf("Error reading %s: %s", file, err)
 	} else if string(contents) != "contents" {
 		t.Fatalf("File contained the wrong contents")
 	}
 	T.Finish()
+}
+
+func TestT_WhiteTempFile(t *testing.T) {
+	TestT_WriteTempFile(t)
+}
+
+func TestT_SubtestTempDirAndFile(t *testing.T) {
+	t.Run("sub/test/with/slashes", func(subT *testing.T) {
+		T := NewT(subT)
+		defer T.Finish()
+
+		dir := T.TempDir()
+		if dir == "" {
+			subT.Fatalf("TempDir failed in subtest")
+		}
+		if _, err := os.Stat(dir); err != nil {
+			subT.Fatalf("TempDir was not created: %s", err)
+		}
+
+		f := T.TempFile()
+		if f == nil {
+			subT.Fatalf("TempFile failed in subtest")
+		}
+		if _, err := os.Stat(f.Name()); err != nil {
+			subT.Fatalf("TempFile was not created: %s", err)
+		}
+
+		wfile := T.WriteTempFile("hello subtest")
+		content, err := os.ReadFile(wfile)
+		T.ExpectSuccess(err)
+		T.Equal(string(content), "hello subtest")
+	})
 }

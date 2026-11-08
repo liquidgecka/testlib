@@ -89,3 +89,30 @@ func TestT_TryUntilYield(t *testing.T) {
 		T.TryUntil(getUnlocked, time.Second)
 	})
 }
+
+func TestT_TryUntilRunsAtLeastOnce(t *testing.T) {
+	t.Parallel()
+	m, T := testSetup()
+
+	called := false
+	m.CheckPass(t, func() {
+		T.TryUntil(func() bool {
+			called = true
+			return true
+		}, 0)
+	})
+	if !called {
+		t.Fatalf("TryUntil did not call f() when timeout is 0")
+	}
+
+	calledF := false
+	m.CheckPass(t, func() {
+		T.TryUntilf(func() bool {
+			calledF = true
+			return true
+		}, 0, "try %d", 1)
+	})
+	if !calledF {
+		t.Fatalf("TryUntilf did not call f() when timeout is 0")
+	}
+}

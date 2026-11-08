@@ -11,7 +11,7 @@ go get github.com/liquidgecka/testlib
 ## Usage
 
 Within a Test function you can setup and use a TestLib instance. This will
-provide very short and easy to follow functions for doing thing within the
+provide very short and easy to follow functions for doing things within the
 unit test. Ideally you can pass the TestLib object to helper functions as
 well.
 
@@ -33,11 +33,11 @@ func TestSomething(t *testing.T) {
     // automatically terminated via a call to Fatal.
     tmpFile := T.WriteTempFile("contents")
 
-    // Use the ioutil.ReadFile call to read the contents of the file. Since
+    // Use the os.ReadFile call to read the contents of the file. Since
     // the file should exist we can use ExpectSuccess to assert that the
     // call succeeded without error. If err is not nil then the test will be
     // terminated with a call to Fatal.
-    contents, err := ioutil.ReadFile(tmpFile)
+    contents, err := os.ReadFile(tmpFile)
     T.ExpectSuccess(err)
 
     // Next we can check that the read results match the contents we wrote

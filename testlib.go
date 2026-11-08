@@ -16,7 +16,8 @@ package testlib
 
 import (
 	"fmt"
-	"path"
+	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 )
@@ -63,14 +64,21 @@ type T struct {
 // This should be called when the test is started. It will initialize a
 // T instance for the specific test.
 func NewT(t testingTB) *T {
-	return &T{t: t}
+	inst := &T{t: t}
+	if c, ok := t.(interface{ Cleanup(func()) }); ok {
+		c.Cleanup(inst.Finish)
+	}
+	return inst
 }
 
 // This function should be immediately added as a defer after initializing
 // the T structure. This will clean up after the test.
 func (t *T) Finish() {
-	for i := len(t.finalizers) - 1; i >= 0; i-- {
-		t.finalizers[i]()
+	for len(t.finalizers) > 0 {
+		idx := len(t.finalizers) - 1
+		f := t.finalizers[idx]
+		t.finalizers = t.finalizers[:idx]
+		f()
 	}
 }
 
@@ -79,6 +87,21 @@ func (t *T) Finish() {
 // they were added.
 func (t *T) AddFinalizer(f func()) {
 	t.finalizers = append(t.finalizers, f)
+}
+
+// Cleanup registers a function to be called when the test completes.
+// This is an alias for AddFinalizer to provide parity with testing.TB.
+func (t *T) Cleanup(f func()) {
+	t.AddFinalizer(f)
+}
+
+// Helper marks the calling function as a test helper function.
+// When printing file and line information, that information will be
+// attributed to the caller of the helper function.
+func (t *T) Helper() {
+	if h, ok := t.t.(interface{ Helper() }); ok {
+		h.Helper()
+	}
 }
 
 // This call will make a stack trace message for the Fatal/Fatalf and
@@ -93,14 +116,14 @@ func (t *T) makeStack(msg string) string {
 	// get the directory of this function from the runtime module and compare
 	// all lines against that directory.
 	_, thisfile, _, _ := runtime.Caller(0)
-	thisdir := path.Dir(thisfile)
+	thisdir := filepath.Clean(filepath.Dir(thisfile))
 
 	// Now walk through generating a stack trace.
 	for i := 0; true; i++ {
 		_, file, line, ok := runtime.Caller(i)
 		if !ok {
 			break
-		} else if path.Dir(file) == thisdir {
+		} else if filepath.Clean(filepath.Dir(file)) == thisdir {
 			continue
 		}
 		trace := fmt.Sprintf("%s:%d", file, line)
@@ -113,21 +136,31 @@ func (t *T) makeStack(msg string) string {
 // Wraps the testing.T.Error function call in order to provide full stack
 // traces around the error being reported rather than just the calling line.
 func (t *T) Error(args ...interface{}) {
+	t.Helper()
 	t.t.Error(t.makeStack(fmt.Sprint(args...)))
 }
 
 // Like Error() but for formatted strings.
 func (t *T) Errorf(format string, args ...interface{}) {
+	t.Helper()
 	t.t.Error(t.makeStack(fmt.Sprintf(format, args...)))
+}
+
+// A wrapper around testing.T.Fail()
+func (t *T) Fail() {
+	t.Helper()
+	t.t.Fail()
 }
 
 // A wrapper around testing.T.FailNow()
 func (t *T) FailNow() {
+	t.Helper()
 	t.t.FailNow()
 }
 
 // A wrapper around testing.T.Failed()
 func (t *T) Failed() bool {
+	t.Helper()
 	return t.t.Failed()
 }
 
@@ -136,23 +169,25 @@ func (t *T) Failed() bool {
 // failing line. This is optimal because it makes debugging when loops
 // or helper functions are used far easier.
 func (t *T) Fatal(args ...interface{}) {
-	// TODO: Add pre-failure helper functions.
+	t.Helper()
 	t.t.Fatal(t.makeStack(fmt.Sprint(args...)))
 }
 
 // Like Fatal() except for formatted strings.
 func (t *T) Fatalf(format string, args ...interface{}) {
-	// TODO: Add pre-failure helper functions.
+	t.Helper()
 	t.t.Fatal(t.makeStack(fmt.Sprintf(format, args...)))
 }
 
 // A wrapper for testing.T.Log to make object passing easier.
 func (t *T) Log(args ...interface{}) {
+	t.Helper()
 	t.t.Log(args...)
 }
 
 // A wrapper for testing.T.Logf to make object passing easier.
 func (t *T) Logf(format string, args ...interface{}) {
+	t.Helper()
 	t.t.Logf(format, args...)
 }
 
@@ -185,25 +220,55 @@ func (t *T) Name() string {
 		}
 	}
 
+	// Fallback to testing.TB's Name() if available and stack trace did not
+	// locate a test function name (e.g. inside subtests or anonymous goroutines).
+	if t.name == "" {
+		if n, ok := t.t.(interface{ Name() string }); ok {
+			t.name = n.Name()
+		}
+	}
+
 	return t.name
+}
+
+// Setenv sets the value of the environment variable named by key
+// and registers a cleanup function to restore its original value
+// after the test finishes.
+func (t *T) Setenv(key, value string) {
+	t.Helper()
+	orig, ok := os.LookupEnv(key)
+	if err := os.Setenv(key, value); err != nil {
+		t.Fatalf("cannot set environment variable %s: %s", key, err)
+	}
+	t.AddFinalizer(func() {
+		if ok {
+			_ = os.Setenv(key, orig)
+		} else {
+			_ = os.Unsetenv(key)
+		}
+	})
 }
 
 // Marks the test as having skipped and reports a full stack trace.
 func (t *T) Skip(args ...interface{}) {
+	t.Helper()
 	t.t.Skip(t.makeStack(fmt.Sprint(args...)))
 }
 
 // A wrapper around testing.T.SkipNow()
 func (t *T) SkipNow() {
+	t.Helper()
 	t.t.SkipNow()
 }
 
 // Wraps around testing.T.Skipf except this provides a full stack trace.
 func (t *T) Skipf(format string, args ...interface{}) {
+	t.Helper()
 	t.t.Skip(t.makeStack(fmt.Sprintf(format, args...)))
 }
 
 // A wrapper around testing.T.Skipped()
 func (t *T) Skipped() bool {
+	t.Helper()
 	return t.t.Skipped()
 }

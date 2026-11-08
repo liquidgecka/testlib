@@ -379,3 +379,158 @@ func TestEqualWithIgnoresf(t *testing.T) {
 		T.EqualWithIgnoresf(have, want, []string{"link1.str"}, "foo %d", 4)
 	})
 }
+
+func TestT_Equal_ComplexNumbers(t *testing.T) {
+	t.Parallel()
+	m, T := testSetup()
+
+	// Equal complex numbers
+	m.CheckPass(t, func() {
+		T.Equal(complex64(1+2i), complex64(1+2i))
+		T.Equal(complex128(3+4i), complex128(3+4i))
+	})
+
+	// Different complex numbers must fail
+	m.CheckFail(t, func() {
+		T.Equal(complex64(1+2i), complex64(1+3i))
+	})
+	m.CheckFail(t, func() {
+		T.Equal(complex128(3+4i), complex128(5+6i))
+	})
+
+	// NotEqual with complex numbers
+	m.CheckPass(t, func() {
+		T.NotEqual(complex64(1+2i), complex64(1+3i))
+		T.NotEqual(complex128(3+4i), complex128(5+6i))
+	})
+	m.CheckFail(t, func() {
+		T.NotEqual(complex64(1+2i), complex64(1+2i))
+	})
+}
+
+func TestT_Equal_Functions(t *testing.T) {
+	t.Parallel()
+	m, T := testSetup()
+
+	f1 := func() {}
+	f2 := func() {}
+	same := f1
+
+	m.CheckPass(t, func() {
+		T.Equal(f1, same)
+	})
+	m.CheckFail(t, func() {
+		T.Equal(f1, f2)
+	})
+	m.CheckPass(t, func() {
+		T.NotEqual(f1, f2)
+	})
+}
+
+func TestT_Equal_PointerNil(t *testing.T) {
+	t.Parallel()
+	m, T := testSetup()
+
+	val := 10
+	type ptrStruct struct {
+		P *int
+	}
+
+	sNil := ptrStruct{P: nil}
+	sVal := ptrStruct{P: &val}
+
+	// Capture the error message to verify it is informative
+	msg := ""
+	m.funcFatal = func(args ...interface{}) {
+		msg = fmt.Sprint(args...)
+	}
+
+	m.CheckFail(t, func() {
+		T.Equal(sVal, sNil)
+	})
+	if !strings.Contains(msg, "not equal") || !strings.Contains(msg, "want: nil") {
+		t.Fatalf("Unexpected error message for val vs nil: %s", msg)
+	}
+
+	msg = ""
+	m.CheckFail(t, func() {
+		T.Equal(sNil, sVal)
+	})
+	if !strings.Contains(msg, "not equal") || !strings.Contains(msg, "have: nil") {
+		t.Fatalf("Unexpected error message for nil vs val: %s", msg)
+	}
+
+	// Slices of pointers
+	m.CheckPass(t, func() {
+		T.Equal([]*int{nil, &val}, []*int{nil, &val})
+	})
+	m.CheckFail(t, func() {
+		T.Equal([]*int{&val}, []*int{nil})
+	})
+}
+
+func TestT_EqualWithIgnores_Map(t *testing.T) {
+	t.Parallel()
+	m, T := testSetup()
+
+	have := map[string]int{"a": 1, "b": 2}
+	want := map[string]int{"a": 10, "b": 2}
+
+	// Should pass because "a" is ignored
+	m.CheckPass(t, func() {
+		T.EqualWithIgnores(have, want, []string{"[\"a\"]"})
+	})
+
+	// Without ignore, it must fail
+	m.CheckFail(t, func() {
+		T.EqualWithIgnores(have, want, []string{"[\"b\"]"})
+	})
+}
+
+func TestT_Equal_MapNonStringKeys(t *testing.T) {
+	t.Parallel()
+	m, T := testSetup()
+
+	msg := ""
+	m.funcFatal = func(args ...interface{}) {
+		msg = fmt.Sprint(args...)
+	}
+
+	// Int keys
+	m.CheckFail(t, func() {
+		T.Equal(map[int]string{1: "one"}, map[int]string{2: "two"})
+	})
+	if strings.Contains(msg, "%!q") || strings.Contains(msg, "\\x01") {
+		t.Fatalf("Int key had bad format: %s", msg)
+	}
+	if !strings.Contains(msg, "[2]") || !strings.Contains(msg, "[1]") {
+		t.Fatalf("Int keys not formatted properly: %s", msg)
+	}
+
+	// Bool keys
+	msg = ""
+	m.CheckFail(t, func() {
+		T.Equal(map[bool]int{true: 1}, map[bool]int{false: 2})
+	})
+	if strings.Contains(msg, "%!q") {
+		t.Fatalf("Bool key had invalid %%!q format: %s", msg)
+	}
+	if !strings.Contains(msg, "[false]") || !strings.Contains(msg, "[true]") {
+		t.Fatalf("Bool keys not formatted properly: %s", msg)
+	}
+
+	// Nested map in struct description
+	type structWithMap struct {
+		M map[string]int
+	}
+	msg = ""
+	m.CheckFail(t, func() {
+		T.Equal(structWithMap{M: map[string]int{"a": 1}}, structWithMap{M: map[string]int{"b": 2}})
+	})
+	if strings.Contains(msg, "MExpected") {
+		t.Fatalf("Missing separator after desc: %s", msg)
+	}
+	if !strings.Contains(msg, "M: Expected key") {
+		t.Fatalf("Expected key message missing or malformed: %s", msg)
+	}
+}
