@@ -67,9 +67,8 @@ tmpFile := testlib.WriteTempFile(T, []byte("contents"))
 ```
 
 ## Testing
-[![Continuous Integration](https://secure.travis-ci.org/liquidgecka/testlib.svg?branch=master)](http://travis-ci.org/liquidgecka/testlib)
-[![Documentation](http://godoc.org/github.com/liquidgecka/testlib?status.png)](http://godoc.org/github.com/liquidgecka/testlib)
-[![Coverage](https://img.shields.io/coveralls/liquidgecka/testlib.svg)](https://coveralls.io/r/liquidgecka/testlib)
+[![CI](https://github.com/liquidgecka/testlib/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/liquidgecka/testlib/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/liquidgecka/testlib.svg)](https://pkg.go.dev/github.com/liquidgecka/testlib)
 
 ## Contribution
 
