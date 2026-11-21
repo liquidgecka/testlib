@@ -129,6 +129,52 @@ func (t *T) notEqualPrefix_(have, unwanted interface{}, prefix string) {
 	}
 }
 
+// Equal is a generic version of (*T).Equal that enforces at compile time that
+// have and want have the same type V.
+func Equal[V any](t *T, have, want V, desc ...string) {
+	t.Helper()
+	t.Equal(have, want, desc...)
+}
+
+// Equalf is a generic version of (*T).Equalf that enforces at compile time
+// that have and want have the same type V.
+func Equalf[V any](t *T, have, want V, spec string, args ...any) {
+	t.Helper()
+	t.Equalf(have, want, spec, args...)
+}
+
+// EqualWithIgnores is a generic version of (*T).EqualWithIgnores that enforces
+// at compile time that have and want have the same type V.
+func EqualWithIgnores[V any](
+	t *T, have, want V, ignores []string, desc ...string,
+) {
+	t.Helper()
+	t.EqualWithIgnores(have, want, ignores, desc...)
+}
+
+// EqualWithIgnoresf is a generic version of (*T).EqualWithIgnoresf that
+// enforces at compile time that have and want have the same type V.
+func EqualWithIgnoresf[V any](
+	t *T, have, want V, ignores []string, spec string, args ...any,
+) {
+	t.Helper()
+	t.EqualWithIgnoresf(have, want, ignores, spec, args...)
+}
+
+// NotEqual is a generic version of (*T).NotEqual that enforces at compile time
+// that have and unwanted have the same type V.
+func NotEqual[V any](t *T, have, unwanted V, desc ...string) {
+	t.Helper()
+	t.NotEqual(have, unwanted, desc...)
+}
+
+// NotEqualf is a generic version of (*T).NotEqualf that enforces at compile
+// time that have and unwanted have the same type V.
+func NotEqualf[V any](t *T, have, unwanted V, spec string, args ...any) {
+	t.Helper()
+	t.NotEqualf(have, unwanted, spec, args...)
+}
+
 // Tracks access to specific pointers so we do not recurse.
 type visitedNode struct {
 	a1   uintptr

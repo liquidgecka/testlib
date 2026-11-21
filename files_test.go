@@ -255,3 +255,105 @@ func TestT_SubtestTempDirAndFile(t *testing.T) {
 		T.Equal(string(content), "hello subtest")
 	})
 }
+
+func TestWriteTempFileModeGeneric(t *testing.T) {
+	type customStr string
+	type customBytes []byte
+
+	verifyFile := func(name string, want []byte, wantMode os.FileMode) {
+		t.Helper()
+		if name == "" {
+			t.Fatalf("Returned file can not be empty.")
+		}
+		stat, err := os.Stat(name)
+		if err != nil {
+			t.Fatalf("Error statting returned file %s: %s", name, err)
+		}
+		if stat.Mode() != wantMode {
+			t.Fatalf("Returned file '%s' has the wrong mode: %x", name, stat.Mode())
+		}
+		got, err := os.ReadFile(name)
+		if err != nil {
+			t.Fatalf("Error reading %s: %s", name, err)
+		}
+		if string(got) != string(want) {
+			t.Fatalf("File contained wrong contents: got %x, want %x", got, want)
+		}
+	}
+
+	m, T := testSetup()
+	var fStr, fBytes, fCustomStr, fCustomBytes, fEmptyStr, fNilBytes string
+	m.CheckPass(t, func() {
+		fStr = WriteTempFileMode(T, "contents", os.FileMode(0614))
+		fBytes = WriteTempFileMode(T, []byte{0x00, 0x01, 0xff}, os.FileMode(0614))
+		fCustomStr = WriteTempFileMode(T, customStr("custom-str"), os.FileMode(0614))
+		fCustomBytes = WriteTempFileMode(T, customBytes{0x10, 0x20}, os.FileMode(0614))
+		fEmptyStr = WriteTempFileMode(T, "", os.FileMode(0614))
+		fNilBytes = WriteTempFileMode(T, []byte(nil), os.FileMode(0614))
+	})
+
+	verifyFile(fStr, []byte("contents"), os.FileMode(0614))
+	verifyFile(fBytes, []byte{0x00, 0x01, 0xff}, os.FileMode(0614))
+	verifyFile(fCustomStr, []byte("custom-str"), os.FileMode(0614))
+	verifyFile(fCustomBytes, []byte{0x10, 0x20}, os.FileMode(0614))
+	verifyFile(fEmptyStr, []byte{}, os.FileMode(0614))
+	verifyFile(fNilBytes, []byte{}, os.FileMode(0614))
+
+	T.Finish()
+	for _, f := range []string{fStr, fBytes, fCustomStr, fCustomBytes, fEmptyStr, fNilBytes} {
+		if _, err := os.Stat(f); !os.IsNotExist(err) {
+			t.Fatalf("The file %s shouldn't exist after Finish().", f)
+		}
+	}
+}
+
+func TestWriteTempFileGeneric(t *testing.T) {
+	type customStr string
+	type customBytes []byte
+
+	verifyFile := func(name string, want []byte, wantMode os.FileMode) {
+		t.Helper()
+		if name == "" {
+			t.Fatalf("Returned file can not be empty.")
+		}
+		stat, err := os.Stat(name)
+		if err != nil {
+			t.Fatalf("Error statting returned file %s: %s", name, err)
+		}
+		if stat.Mode() != wantMode {
+			t.Fatalf("Returned file '%s' has the wrong mode: %x", name, stat.Mode())
+		}
+		got, err := os.ReadFile(name)
+		if err != nil {
+			t.Fatalf("Error reading %s: %s", name, err)
+		}
+		if string(got) != string(want) {
+			t.Fatalf("File contained wrong contents: got %x, want %x", got, want)
+		}
+	}
+
+	m, T := testSetup()
+	var fStr, fBytes, fCustomStr, fCustomBytes, fEmptyStr, fNilBytes string
+	m.CheckPass(t, func() {
+		fStr = WriteTempFile(T, "contents")
+		fBytes = WriteTempFile(T, []byte{0x00, 0x01, 0xff})
+		fCustomStr = WriteTempFile(T, customStr("custom-str"))
+		fCustomBytes = WriteTempFile(T, customBytes{0x10, 0x20})
+		fEmptyStr = WriteTempFile(T, "")
+		fNilBytes = WriteTempFile(T, []byte(nil))
+	})
+
+	verifyFile(fStr, []byte("contents"), os.FileMode(0644))
+	verifyFile(fBytes, []byte{0x00, 0x01, 0xff}, os.FileMode(0644))
+	verifyFile(fCustomStr, []byte("custom-str"), os.FileMode(0644))
+	verifyFile(fCustomBytes, []byte{0x10, 0x20}, os.FileMode(0644))
+	verifyFile(fEmptyStr, []byte{}, os.FileMode(0644))
+	verifyFile(fNilBytes, []byte{}, os.FileMode(0644))
+
+	T.Finish()
+	for _, f := range []string{fStr, fBytes, fCustomStr, fCustomBytes, fEmptyStr, fNilBytes} {
+		if _, err := os.Stat(f); !os.IsNotExist(err) {
+			t.Fatalf("The file %s shouldn't exist after Finish().", f)
+		}
+	}
+}

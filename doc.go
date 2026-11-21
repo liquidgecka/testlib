@@ -57,4 +57,12 @@
 // through objects verifying that they are in fact equal, regardless of types.
 // Unlike most other implementations this will also follow pointers to ensure
 // that referenced data is also equal.
+//
+// # Generic Helpers
+//
+// Because Go does not support type parameters on methods, package-level generic
+// counterparts are provided for functions that benefit from compile-time type
+// enforcement or flexible input types: Equal, Equalf, EqualWithIgnores,
+// EqualWithIgnoresf, NotEqual, NotEqualf, ExpectPanic, ExpectPanicf,
+// WriteTempFile, and WriteTempFileMode. Each takes *T as its first argument.
 package testlib

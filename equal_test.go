@@ -534,3 +534,172 @@ func TestT_Equal_MapNonStringKeys(t *testing.T) {
 		t.Fatalf("Expected key message missing or malformed: %s", msg)
 	}
 }
+
+func TestEqualAndNotEqualGeneric(t *testing.T) {
+	t.Parallel()
+	m, T := testSetup()
+
+	// Basic types.
+	m.CheckPass(t, func() {
+		Equal(T, 1, 1)
+		Equalf(T, 1, 1, "int %d", 1)
+		Equal(T, "abc", "abc")
+		Equal(T, true, true)
+		Equal(T, 3.14, 3.14)
+		Equal(T, complex128(1+2i), complex128(1+2i))
+
+		NotEqual(T, 1, 2)
+		NotEqualf(T, 1, 2, "int %d", 2)
+		NotEqual(T, "abc", "def")
+		NotEqual(T, true, false)
+		NotEqual(T, 3.14, 2.71)
+		NotEqual(T, complex128(1+2i), complex128(1+3i))
+	})
+	m.CheckFail(t, func() { Equal(T, 1, 2) })
+	m.CheckFail(t, func() { NotEqual(T, 1, 1) })
+
+	// Untyped constant inference with typed and custom defined types.
+	type myInt int
+	m.CheckPass(t, func() {
+		Equal(T, int64(42), 42)
+		Equalf(T, int64(42), 42, "int64 %d", 1)
+		NotEqual(T, int64(42), 43)
+		NotEqualf(T, int64(42), 43, "int64 %d", 2)
+		Equal(T, myInt(5), 5)
+		NotEqual(T, myInt(5), 6)
+	})
+	m.CheckFail(t, func() { Equal(T, int64(42), 43) })
+	m.CheckFail(t, func() { NotEqual(T, myInt(5), 5) })
+
+	// Non-comparable types: slices, maps, structs with slices, funcs, circular nodes.
+	type structWithSlice struct {
+		Items []int
+	}
+	fn1 := func() {}
+	fn2 := func() {}
+	c1 := &testEqualCustomNode{value: "a"}
+	c1.next = c1
+	c2 := &testEqualCustomNode{value: "a"}
+	c2.next = c2
+	c3 := &testEqualCustomNode{value: "a"}
+	c3.next = &testEqualCustomNode{value: "b", next: c3}
+
+	m.CheckPass(t, func() {
+		Equal(T, []int{1, 2}, []int{1, 2})
+		Equal(T, map[string]int{"a": 1}, map[string]int{"a": 1})
+		Equal(T, structWithSlice{Items: []int{1, 2}}, structWithSlice{Items: []int{1, 2}})
+		Equal(T, fn1, fn1)
+		Equal(T, c1, c2)
+
+		NotEqual(T, []int{1, 2}, []int{1, 3})
+		NotEqual(T, map[string]int{"a": 1}, map[string]int{"a": 2})
+		NotEqual(T, structWithSlice{Items: []int{1}}, structWithSlice{Items: []int{2}})
+		NotEqual(T, fn1, fn2)
+		NotEqual(T, c1, c3)
+	})
+	m.CheckFail(t, func() { Equal(T, []int{1, 2}, []int{1, 3}) })
+	m.CheckFail(t, func() { Equal(T, fn1, fn2) })
+	m.CheckFail(t, func() { Equal(T, c1, c3) })
+
+	// Typed nil and untyped nil inference.
+	v := 10
+	var nilPtr *int
+	m.CheckPass(t, func() {
+		Equal(T, nilPtr, nil)
+		Equal(T, nil, nilPtr)
+		NotEqual(T, &v, nil)
+		NotEqual(T, nil, &v)
+		Equal(T, []int(nil), nil)
+	})
+	m.CheckFail(t, func() { NotEqual(T, nilPtr, nil) })
+	m.CheckFail(t, func() { Equal(T, &v, nil) })
+	m.CheckFail(t, func() { Equal(T, nil, &v) })
+	m.CheckFail(t, func() { Equal(T, []int{}, nil) })
+
+	// Explicit interface type parameter.
+	var err error
+	m.CheckPass(t, func() { Equal(T, err, nil) })
+	m.CheckFail(t, func() { Equal[any](T, 1, "1") })
+
+	// Prefix assertions.
+	msg := ""
+	m.funcFatal = func(args ...interface{}) {
+		msg = fmt.Sprint(args...)
+	}
+	m.CheckFail(t, func() { Equal(T, 1, 2, "prefix") })
+	if !strings.HasPrefix(msg, "prefix: ") {
+		t.Fatalf("Equal prefix was not prepended: %s", msg)
+	}
+	msg = ""
+	m.CheckFail(t, func() { Equalf(T, 1, 2, "foo %d", 1) })
+	if !strings.HasPrefix(msg, "foo 1: ") {
+		t.Fatalf("Equalf prefix was not prepended: %s", msg)
+	}
+	msg = ""
+	m.CheckFail(t, func() { NotEqual(T, 1, 1, "prefix") })
+	if !strings.HasPrefix(msg, "prefix: ") {
+		t.Fatalf("NotEqual prefix was not prepended: %s", msg)
+	}
+	msg = ""
+	m.CheckFail(t, func() { NotEqualf(T, 1, 1, "foo %d", 1) })
+	if !strings.HasPrefix(msg, "foo 1: ") {
+		t.Fatalf("NotEqualf prefix was not prepended: %s", msg)
+	}
+}
+
+func TestEqualWithIgnoresGeneric(t *testing.T) {
+	t.Parallel()
+
+	have := &testObject{
+		str:   "same1",
+		link1: &testObject{str: "same2"},
+		link2: &testObject{str: "different_have"},
+	}
+	want := &testObject{
+		str:   "same1",
+		link1: &testObject{str: "same2"},
+		link2: &testObject{str: "different_want"},
+	}
+
+	m, T := testSetup()
+	msg := ""
+	m.funcFatal = func(args ...interface{}) {
+		msg = fmt.Sprint(args...)
+	}
+
+	m.CheckPass(t, func() {
+		EqualWithIgnores(T, have, want, []string{"link2.str"}, "prefix")
+		EqualWithIgnoresf(T, have, want, []string{"link2.str"}, "foo %d", 1)
+	})
+
+	m.CheckFail(t, func() {
+		EqualWithIgnores(T, have, want, nil, "prefix")
+	})
+	if !strings.HasPrefix(msg, "prefix: ") {
+		t.Fatalf("EqualWithIgnores prefix was not prepended: %s", msg)
+	}
+
+	msg = ""
+	m.CheckFail(t, func() {
+		EqualWithIgnores(T, have, want, []string{"link1.str"}, "prefix")
+	})
+	if !strings.HasPrefix(msg, "prefix: ") {
+		t.Fatalf("EqualWithIgnores prefix was not prepended: %s", msg)
+	}
+
+	msg = ""
+	m.CheckFail(t, func() {
+		EqualWithIgnoresf(T, have, want, nil, "foo %d", 2)
+	})
+	if !strings.HasPrefix(msg, "foo 2: ") {
+		t.Fatalf("EqualWithIgnoresf prefix was not prepended: %s", msg)
+	}
+
+	msg = ""
+	m.CheckFail(t, func() {
+		EqualWithIgnoresf(T, have, want, []string{"link1.str"}, "foo %d", 3)
+	})
+	if !strings.HasPrefix(msg, "foo 3: ") {
+		t.Fatalf("EqualWithIgnoresf prefix was not prepended: %s", msg)
+	}
+}

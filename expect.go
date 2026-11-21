@@ -133,3 +133,18 @@ func (t *T) ExpectPanicf(f func(), err interface{}, spec string, args ...interfa
 	}()
 	f()
 }
+
+// ExpectPanic is a generic version of (*T).ExpectPanic that calls f() and
+// expects it to panic with a value equal to err of type V.
+func ExpectPanic[V any](t *T, f func(), err V, desc ...string) {
+	t.Helper()
+	t.ExpectPanic(f, err, desc...)
+}
+
+// ExpectPanicf is a generic version of (*T).ExpectPanicf that calls f() and
+// expects it to panic with a value equal to err of type V, using Printf style
+// formatting for the description message.
+func ExpectPanicf[V any](t *T, f func(), err V, spec string, args ...any) {
+	t.Helper()
+	t.ExpectPanicf(f, err, spec, args...)
+}

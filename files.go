@@ -107,18 +107,36 @@ func (t *T) TempFile() *os.File {
 // the name of the created file.
 func (t *T) WriteTempFileMode(contents string, mode os.FileMode) string {
 	t.Helper()
-	f := t.TempFileMode(mode)
-	name := f.Name()
-	_, err := io.WriteString(f, contents)
-	t.ExpectSuccess(err)
-	t.ExpectSuccess(f.Close())
-	return name
+	return WriteTempFileMode(t, contents, mode)
 }
 
 // Like WriteTempFileMode except this uses the default temp file mode.
 func (t *T) WriteTempFile(contents string) string {
 	t.Helper()
 	return t.WriteTempFileMode(contents, 0644)
+}
+
+// WriteTempFileMode is a generic version of (*T).WriteTempFileMode that
+// accepts either a string or []byte (including defined types with those
+// underlying types) as contents and returns the name of the created file.
+func WriteTempFileMode[S ~string | ~[]byte](
+	t *T, contents S, mode os.FileMode,
+) string {
+	t.Helper()
+	f := t.TempFileMode(mode)
+	name := f.Name()
+	_, err := f.Write([]byte(contents))
+	t.ExpectSuccess(err)
+	t.ExpectSuccess(f.Close())
+	return name
+}
+
+// WriteTempFile is a generic version of (*T).WriteTempFile that accepts either
+// a string or []byte (including defined types with those underlying types) as
+// contents using the default temp file mode (0644).
+func WriteTempFile[S ~string | ~[]byte](t *T, contents S) string {
+	t.Helper()
+	return WriteTempFileMode(t, contents, 0644)
 }
 
 // -------------------------------

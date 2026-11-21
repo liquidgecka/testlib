@@ -48,6 +48,24 @@ func TestSomething(t *testing.T) {
 }
 ```
 
+### Generic Helpers
+
+Go does not support type parameters on methods, so `testlib` provides
+package-level generic functions alongside the existing `*T` methods. Each takes
+`T` as its first argument:
+
+```go
+// Compile-time type checking and untyped constant inference for equality.
+testlib.Equal(T, int64(42), 42)
+testlib.NotEqual(T, int64(10), 1)
+
+// Generic panic expectation.
+testlib.ExpectPanic(T, func() { panic("boom") }, "boom")
+
+// Accepts either string or []byte (including defined types with those underlying types).
+tmpFile := testlib.WriteTempFile(T, []byte("contents"))
+```
+
 ## Testing
 [![Continuous Integration](https://secure.travis-ci.org/liquidgecka/testlib.svg?branch=master)](http://travis-ci.org/liquidgecka/testlib)
 [![Documentation](http://godoc.org/github.com/liquidgecka/testlib?status.png)](http://godoc.org/github.com/liquidgecka/testlib)

@@ -199,3 +199,89 @@ func TestT_ExpectPanicf(t *testing.T) {
 		t.Fatalf("ExpectPanicf did not include formatted prefix: %s", msg)
 	}
 }
+
+func TestExpectPanicGeneric(t *testing.T) {
+	t.Parallel()
+	m, T := testSetup()
+
+	type panicSlice struct {
+		items []int
+	}
+
+	// Passing with inferred types (string, int, non-comparable struct with slice).
+	m.CheckPass(t, func() {
+		ExpectPanic(T, func() { panic("EXPECTED") }, "EXPECTED", "prefix")
+		ExpectPanic(T, func() { panic(42) }, 42)
+		ExpectPanic(T, func() {
+			panic(panicSlice{items: []int{1, 2}})
+		}, panicSlice{items: []int{1, 2}})
+	})
+
+	// Explicit type argument + untyped constant.
+	m.CheckPass(t, func() {
+		ExpectPanic[int64](T, func() { panic(int64(42)) }, 42)
+	})
+
+	// Wrong panicked type must fail.
+	m.CheckFail(t, func() {
+		ExpectPanic[int64](T, func() { panic(42) }, 42)
+	})
+
+	// Function does not panic must fail.
+	m.CheckFail(t, func() {
+		ExpectPanic(T, func() {}, "UNEXPECTED")
+	})
+
+	// Value mismatch must fail and include desc prefix.
+	msg := ""
+	m.funcFatal = func(args ...interface{}) {
+		msg = fmt.Sprint(args...)
+	}
+	m.CheckFail(t, func() {
+		ExpectPanic(T, func() { panic("wrong") }, "expected", "prefix_check")
+	})
+	if !strings.Contains(msg, "prefix_check: ") {
+		t.Fatalf("ExpectPanic generic did not include prefix in mismatch error: %s", msg)
+	}
+}
+
+func TestExpectPanicfGeneric(t *testing.T) {
+	t.Parallel()
+	m, T := testSetup()
+
+	type panicSlice struct {
+		items []int
+	}
+
+	// Passing with inferred types and explicit type argument.
+	m.CheckPass(t, func() {
+		ExpectPanicf(T, func() { panic("boom") }, "boom", "panic %d", 1)
+		ExpectPanicf(T, func() { panic(42) }, 42, "panic %d", 2)
+		ExpectPanicf(T, func() {
+			panic(panicSlice{items: []int{3, 4}})
+		}, panicSlice{items: []int{3, 4}}, "panic %d", 3)
+		ExpectPanicf[int64](T, func() { panic(int64(42)) }, 42, "panic %d", 4)
+	})
+
+	// Wrong panicked type must fail.
+	m.CheckFail(t, func() {
+		ExpectPanicf[int64](T, func() { panic(42) }, 42, "panic %d", 5)
+	})
+
+	// Function does not panic must fail.
+	m.CheckFail(t, func() {
+		ExpectPanicf(T, func() {}, "UNEXPECTED", "fmt %d", 6)
+	})
+
+	// Value mismatch must fail and include formatted prefix.
+	msg := ""
+	m.funcFatal = func(args ...interface{}) {
+		msg = fmt.Sprint(args...)
+	}
+	m.CheckFail(t, func() {
+		ExpectPanicf(T, func() { panic("wrong") }, "expected", "formatted %s", "prefix")
+	})
+	if !strings.Contains(msg, "formatted prefix: ") {
+		t.Fatalf("ExpectPanicf generic did not include formatted prefix: %s", msg)
+	}
+}

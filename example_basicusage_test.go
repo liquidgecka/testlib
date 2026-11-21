@@ -42,6 +42,13 @@ func _TestBasicExample(t *testing.T) {
 	// We can also assert inequality.
 	T.NotEqual(10, 1)
 
+	// Package-level generic helpers provide compile-time type enforcement and
+	// flexible input types alongside the *T methods.
+	testlib.Equal(T, int64(1), 1)
+	testlib.NotEqual(T, int64(10), 1)
+	_ = testlib.WriteTempFile(T, []byte("contents"))
+	testlib.ExpectPanic(T, func() { panic("boom") }, "boom")
+
 	// It is also possible to do a very simple error check that will Fatalf the
 	// test if an error is returned.
 	_, err := os.Open(fd.Name())
